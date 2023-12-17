@@ -56,7 +56,10 @@ void test_bad_filter_string (const char *const filter_)
 }
 
 #define TEST_BAD_FILTER_STRING(case, filter)                                   \
-    void test_bad_filter_string_##case (){test_bad_filter_string (filter);}
+    void test_bad_filter_string_##case ()                                      \
+    {                                                                          \
+        test_bad_filter_string (filter);                                       \
+    }
 
 TEST_BAD_FILTER_STRING (foo, "foo")
 TEST_BAD_FILTER_STRING (zeros_foo, "0.0.0.0foo")
@@ -165,7 +168,7 @@ void test_set_non_matching ()
     test_context_socket_close_zero_linger (bind_socket);
 }
 
-int ZMQ_CDECL main ()
+int main ()
 {
     setup_test_environment ();
 
