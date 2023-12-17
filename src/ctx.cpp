@@ -605,7 +605,10 @@ int zmq::thread_ctx_t::set (int option_, const void *optval_, size_t optvallen_)
             break;
 
         default:
+#if defined(ZMQ_ACT_MILITANT)
             zmq_abort ("Invalid option");
+#endif
+            break;
     }
 
     errno = EINVAL;
@@ -642,7 +645,10 @@ int zmq::thread_ctx_t::get (int option_,
             break;
 
         default:
+#if defined(ZMQ_ACT_MILITANT)
             zmq_abort ("Invalid option");
+#endif
+            break;
     }
 
     errno = EINVAL;
