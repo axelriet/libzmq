@@ -477,7 +477,8 @@ zmq_sendiov (_In_ void *s_,
             rc = -1;
             break;
         }
-        memcpy (((zmq::msg_t *) &msg)->datap (), iov_[i].iov_base, iov_[i].iov_len);
+        memcpy (((zmq::msg_t *) &msg)->datap (), iov_[i].iov_base,
+                iov_[i].iov_len);
         if (i == count_ - 1)
             flags_ = flags_ & ~ZMQ_SNDMORE;
         rc = s_sendmsg (s, &msg, flags_);
@@ -608,7 +609,8 @@ zmq_recviov (_In_ void *s_,
             errno = ENOMEM;
             return -1;
         }
-        memcpy (iov_[i].iov_base, static_cast<char *> (((zmq::msg_t *) &msg)->datap ()),
+        memcpy (iov_[i].iov_base,
+                static_cast<char *> (((zmq::msg_t *) &msg)->datap ()),
                 iov_[i].iov_len);
         // Assume zmq_socket ZMQ_RVCMORE is properly set.
         const zmq::msg_t *p_msg = reinterpret_cast<const zmq::msg_t *> (&msg);
@@ -726,7 +728,8 @@ ZMQ_EXPORT_IMPL (int) zmq_msg_get (_In_ const zmq_msg_t *msg_, int property_)
 
     switch (property_) {
         case ZMQ_MORE:
-            return (((zmq::msg_t *) msg_)->flagsp () & zmq::msg_t::more) ? 1 : 0;
+            return (((zmq::msg_t *) msg_)->flagsp () & zmq::msg_t::more) ? 1
+                                                                         : 0;
         case ZMQ_SRCFD:
             fd_string = zmq_msg_gets (msg_, "__fd");
             if (fd_string == NULL)
@@ -735,7 +738,8 @@ ZMQ_EXPORT_IMPL (int) zmq_msg_get (_In_ const zmq_msg_t *msg_, int property_)
             return atoi (fd_string);
         case ZMQ_SHARED:
             return (((zmq::msg_t *) msg_)->is_cmsg ())
-                       || (((zmq::msg_t *) msg_)->flagsp () & zmq::msg_t::shared)
+                       || (((zmq::msg_t *) msg_)->flagsp ()
+                           & zmq::msg_t::shared)
                      ? 1
                      : 0;
         default:
@@ -1880,9 +1884,9 @@ ZMQ_EXPORT_IMPL (int) zmq_has (_In_z_ const char *capability_)
         || (strcmp (capability_, zmq::protocol_name::udp) == 0))
         return true;
 
-    //
-    // Optional transports (config/build time)
-    //
+        //
+        // Optional transports (config/build time)
+        //
 
 #if defined(ZMQ_HAVE_IPC)
     if (strcmp (capability_, zmq::protocol_name::ipc) == 0)
@@ -1899,9 +1903,9 @@ ZMQ_EXPORT_IMPL (int) zmq_has (_In_z_ const char *capability_)
         return true;
 #endif
 
-    //
-    // Optional transport adapters (config/build time)
-    //
+        //
+        // Optional transport adapters (config/build time)
+        //
 
 #if defined(ZMQ_HAVE_OPENPGM)
     if ((strcmp (capability_, zmq::protocol_name::pgm) == 0)
@@ -1934,9 +1938,9 @@ ZMQ_EXPORT_IMPL (int) zmq_has (_In_z_ const char *capability_)
         return true;
 #endif
 
-    //
-    // Security
-    //
+        //
+        // Security
+        //
 
 #if defined(ZMQ_HAVE_CURVE)
     if (strcmp (capability_, "curve") == 0)
@@ -1948,9 +1952,9 @@ ZMQ_EXPORT_IMPL (int) zmq_has (_In_z_ const char *capability_)
         return true;
 #endif
 
-    //
-    // Optional features (config/build time)
-    //
+        //
+        // Optional features (config/build time)
+        //
 
 #if defined(ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR)
     if (strcmp (capability_, "tbballoc") == 0)
@@ -1962,9 +1966,9 @@ ZMQ_EXPORT_IMPL (int) zmq_has (_In_z_ const char *capability_)
         return true;
 #endif
 
-    //
-    // Draft APIs
-    //
+        //
+        // Draft APIs
+        //
 
 #if defined(ZMQ_BUILD_DRAFT_API)
     if (strcmp (capability_, "draft") == 0)

@@ -30,7 +30,7 @@ class thread_t
         _tfn (NULL),
         _arg (NULL),
         _started (false),
-        _descriptor(NULL),
+        _descriptor (NULL),
         _thread_priority (ZMQ_THREAD_PRIORITY_DFLT),
         _thread_sched_policy (ZMQ_THREAD_SCHED_POLICY_DFLT)
     {

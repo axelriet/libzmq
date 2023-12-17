@@ -1029,7 +1029,7 @@ static void compute_accept_key (char *key_, unsigned char *hash_)
     unsigned int cbsalt = 36; // = strlen(salt);
     const char *salt = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 #ifndef NDEBUG
-    zmq_assert (cbsalt == strlen(salt));
+    zmq_assert (cbsalt == strlen (salt));
 #endif
 #if defined ZMQ_USE_MBEDTLS
     mbedtls_sha1_context ctx;

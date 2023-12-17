@@ -19,10 +19,10 @@
 #include "session_base.hpp"
 
 zmq::vsock_connecter_t::vsock_connecter_t (class io_thread_t *io_thread_,
-                                         class session_base_t *session_,
-                                         const options_t &options_,
-                                         address_t *addr_,
-                                         bool delayed_start_) :
+                                           class session_base_t *session_,
+                                           const options_t &options_,
+                                           address_t *addr_,
+                                           bool delayed_start_) :
     stream_connecter_base_t (
       io_thread_, session_, options_, addr_, delayed_start_),
     _connect_timer_started (false)
@@ -89,7 +89,7 @@ void zmq::vsock_connecter_t::out_event ()
 
 std::string
 zmq::vsock_connecter_t::get_socket_name (zmq::fd_t fd_,
-                                        socket_end_t socket_end_) const
+                                         socket_end_t socket_end_) const
 {
     struct sockaddr_storage ss;
     const zmq_socklen_t sl = get_socket_address (fd_, socket_end_, &ss);
@@ -99,7 +99,7 @@ zmq::vsock_connecter_t::get_socket_name (zmq::fd_t fd_,
     }
 
     const vsock_address_t addr (reinterpret_cast<struct sockaddr *> (&ss), sl,
-                               this->get_ctx ());
+                                this->get_ctx ());
 
     std::string address_string;
     addr.to_string (address_string);
@@ -170,7 +170,7 @@ int zmq::vsock_connecter_t::open ()
     alloc_assert (_addr->resolved.vsock_addr);
 
     _s = vsock_open_socket (_addr->address.c_str (), options,
-                           _addr->resolved.vsock_addr);
+                            _addr->resolved.vsock_addr);
 
     if (_s == retired_fd) {
         //  TODO we should emit some event in this case!
@@ -190,7 +190,8 @@ int zmq::vsock_connecter_t::open ()
 
     //  Connect to the remote peer.
 #if defined ZMQ_HAVE_VXWORKS
-    rc = ::connect (_s, (sockaddr *) vsock_addr->addr (), vsock_addr->addrlen ());
+    rc =
+      ::connect (_s, (sockaddr *) vsock_addr->addr (), vsock_addr->addrlen ());
 #else
     rc = ::connect (_s, vsock_addr->addr (), vsock_addr->addrlen ());
 #endif

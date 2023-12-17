@@ -90,7 +90,8 @@ void test_norm ()
 int GetAdapterIpAddress (
   _Out_writes_bytes_ (ipAddressBufferSizeBytes) char *ipAddressBuffer,
   size_t ipAddressBufferSizeBytes,
-  _Out_writes_bytes_opt_ (adapterNameBufferSizeBytes) char *adapterNameBuffer = nullptr,
+  _Out_writes_bytes_opt_ (adapterNameBufferSizeBytes) char *adapterNameBuffer =
+    nullptr,
   size_t adapterNameBufferSizeBytes = 0)
 {
     *ipAddressBuffer = 0;
@@ -213,8 +214,8 @@ void test_epgm ()
     char ip_address[16];
     TEST_ASSERT_EQUAL_INT (
       0, GetAdapterIpAddress (ip_address, _countof (ip_address)));
-    sprintf_s (network, _countof (network), "epgm://%s;" PRIVATE_EXPERIMENT_MULTICAST ":6211",
-               ip_address);
+    sprintf_s (network, _countof (network),
+               "epgm://%s;" PRIVATE_EXPERIMENT_MULTICAST ":6211", ip_address);
     test (network);
 #else
 #ifdef NETWORK_ADAPTER
@@ -241,7 +242,8 @@ void test_pgm ()
         char ip_address[16];
         TEST_ASSERT_EQUAL_INT (
           0, GetAdapterIpAddress (ip_address, _countof (ip_address)));
-        sprintf_s (network, _countof (network), "pgm://%s;" PRIVATE_EXPERIMENT_MULTICAST ":6212",
+        sprintf_s (network, _countof (network),
+                   "pgm://%s;" PRIVATE_EXPERIMENT_MULTICAST ":6212",
                    ip_address);
         test (network);
     }
@@ -316,8 +318,10 @@ void test_vsock ()
 void test_hvsocket ()
 {
 #if defined ZMQ_HAVE_HVSOCKET
-    test ("hyperv://e0e16197-dd56-4a10-9195-5ee7a155a838:*"); // Loopback, any port.
-    test ("hyperv://loopback:3333"); // Loopback, specific port with VSOCK template.
+    test (
+      "hyperv://e0e16197-dd56-4a10-9195-5ee7a155a838:*"); // Loopback, any port.
+    test (
+      "hyperv://loopback:3333"); // Loopback, specific port with VSOCK template.
 
     //
     // The following tests are machine and/or VM specifics are are meant
@@ -347,7 +351,7 @@ void test_hvsocket ()
 
     //
     // The address parser also understands the following symbolic addresses
-    // 
+    //
     //      broadcast - all partitions (VMs/containers)
     //      children - all child partitions (VMs/containers)
     //      loopback - as demonstraded above. Moral equivalent to localhost.
@@ -382,9 +386,9 @@ int ZMQ_CDECL main ()
 
     RUN_TEST (test_inproc);
     RUN_TEST (test_tcp);
-    
+
     RUN_TEST (test_ipc);
-    
+
     RUN_TEST (test_pgm);
     RUN_TEST (test_epgm);
     RUN_TEST (test_norm);
@@ -395,6 +399,6 @@ int ZMQ_CDECL main ()
 
     RUN_TEST (test_ws);
     RUN_TEST (test_wss);
-    
+
     return UNITY_END ();
 }

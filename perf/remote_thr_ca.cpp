@@ -43,15 +43,15 @@ const char *HintToString (_In_ ZMQ_MSG_ALLOC_HINT hint)
 // it is, we choose to keep a certain number in a lookaside
 // list instead of returning them to the heap. This is an
 // example of a possible application of the custom allocator.
-// 
+//
 // Note: This test app is not a good example to demonstrate
 // perf improvements in the sense that nothing else is
 // allocating anything within the process and the CRT heap is
 // very good. There is therefore not much fragmentation.
-// 
+//
 // The gain is marginal (maybe 6-7%) at messages size 128
 // and number of messages in the 100M to 1B range over IPC.
-// 
+//
 // For most uses, a custom allocator is not worth the pain. Now,
 // if you wrote a doctoral thesis on heaps, low fragmentation, and
 // fized-block allocators, then you might be able to squeeze out
@@ -62,22 +62,22 @@ const char *HintToString (_In_ ZMQ_MSG_ALLOC_HINT hint)
 // step, the message sizes should be recorded, for example
 // using performance counters. From there, statistics will
 // reveal the distribution of message sizes and their frequency.
-// 
+//
 // The time it takes to allocate/free also must be recorded and
 // a real-world workload on a real system should run for a long time
 // (days/weeks) with many millions of messages exchanged together
 // with normal system use. This is why you need to use perfcounters
 // as the data collection cannot be intrusive.
-// 
+//
 // Armed with the numbers, it is possible to deternine if there is
 // anything to gain in speeding up the heap, and where to put the
 // size breaks to cover the most common message sizes, as well as
 // the peak number of messages in flight, to decide how to shape
 // a fixed-block allocator pool.
-// 
+//
 // This article is a good starting point for a possible allocator
 // implementation in C:
-// 
+//
 // https://www.codeproject.com/Articles/1272619/A-Fixed-Block-Memory-Allocator-in-C
 //
 // Another approach could be to extend the lookaside idea presented here
@@ -89,7 +89,7 @@ const char *HintToString (_In_ ZMQ_MSG_ALLOC_HINT hint)
 // depending on what you learned about frequencies, and how much you want
 // to spend for the lookasides. You control the tradeoffs. This may be a
 // little bit faster provided there is no contention on the allocator.
-// 
+//
 // Yet another approach is to use the Intel TBB scalable allocator which
 // is frigteningly quick even in presence of heavy contention.
 //
@@ -158,13 +158,14 @@ void ZMQ_CDECL msg_free (_Pre_maybenull_ _Post_invalid_ void *ptr_,
     if (hint == ZMQ_MSG_ALLOC_HINT_OUTGOING) {
         // There is a possibility that we sligthly exceed the HWM in case
         // of heavy contention. Not really a problem.
-        if ((ptr_ != NULL) && (QueryDepthSList (&LookasideList) < KEEP_ASIDE_HWM)) {
-            InterlockedPushEntrySList (&LookasideList, (PSLIST_ENTRY)ptr_);
+        if ((ptr_ != NULL)
+            && (QueryDepthSList (&LookasideList) < KEEP_ASIDE_HWM)) {
+            InterlockedPushEntrySList (&LookasideList, (PSLIST_ENTRY) ptr_);
         } else {
 #ifdef USE_HEAPALLOC
             (void) HeapFree (hHeap, 0, ptr_);
 #else
-            free(ptr_);
+            free (ptr_);
 #endif
         }
     } else {
@@ -226,7 +227,7 @@ int ZMQ_CDECL main (int argc, char *argv[])
     InitializeSListHead (&LookasideList);
 #endif
 
-    (void)zmq_set_custom_msg_allocator (msg_alloc, msg_free);
+    (void) zmq_set_custom_msg_allocator (msg_alloc, msg_free);
 
     ctx = zmq_init (1);
     if (!ctx) {
@@ -310,15 +311,14 @@ int ZMQ_CDECL main (int argc, char *argv[])
     if (count) {
         for (void *ptr = InterlockedPopEntrySList (&LookasideList); ptr != NULL;
              ptr = InterlockedPopEntrySList (&LookasideList)) {
-
 #if !defined(ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR)
-    #ifdef USE_HEAPALLOC
-                (void) HeapFree (hHeap, 0, ptr);
-    #else
-                free (ptr);
-    #endif
+#ifdef USE_HEAPALLOC
+            (void) HeapFree (hHeap, 0, ptr);
 #else
-                scalable_free (ptr);
+            free (ptr);
+#endif
+#else
+            scalable_free (ptr);
 #endif
         }
     }

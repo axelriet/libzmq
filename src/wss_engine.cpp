@@ -13,7 +13,7 @@ zmq::wss_engine_t::wss_engine_t (fd_t fd_,
                                  ws_address_t &address_,
                                  bool client_,
 #if defined ZMQ_USE_MBEDTLS
-                                 std::unique_ptr<mbedtls_ssl_context>& _ssl,
+                                 std::unique_ptr<mbedtls_ssl_context> &_ssl,
 #else
                                  void *tls_server_cred_,
 #endif

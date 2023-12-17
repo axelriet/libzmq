@@ -267,10 +267,10 @@ ZMQ_EXPORT (int) zmq_ctx_destroy (_In_ _Post_invalid_ void *context_);
 typedef struct zmq_msg_t
 {
 #if defined(_MSC_VER) && (defined(_M_X64) || defined(_M_ARM64))
-    __declspec(align (8)) unsigned char _[64];
+    __declspec (align (8)) unsigned char _[64];
 #elif defined(_MSC_VER)                                                        \
   && (defined(_M_IX86) || defined(_M_ARM_ARMV7VE) || defined(_M_ARM))
-    __declspec(align (4)) unsigned char _[64];
+    __declspec (align (4)) unsigned char _[64];
 #elif defined(__GNUC__) || defined(__INTEL_COMPILER)                           \
   || (defined(__SUNPRO_C) && __SUNPRO_C >= 0x590)                              \
   || (defined(__SUNPRO_CC) && __SUNPRO_CC >= 0x590)
@@ -304,7 +304,7 @@ zmq_set_custom_msg_allocator (_In_ zmq_custom_msg_alloc_fn *malloc_,
 
 _At_ (msg_, _Pre_invalid_ _Pre_notnull_ _Post_valid_) ZMQ_EXPORT (int)
   zmq_msg_init (_Out_ zmq_msg_t *msg_);
-  _At_ (msg_, _Pre_invalid_ _Pre_notnull_ _Post_valid_) ZMQ_EXPORT (int)
+_At_ (msg_, _Pre_invalid_ _Pre_notnull_ _Post_valid_) ZMQ_EXPORT (int)
   zmq_msg_init_size (_Out_ zmq_msg_t *msg_, size_t size_);
 _At_ (msg_, _Pre_invalid_ _Pre_notnull_ _Post_valid_) ZMQ_EXPORT (int)
   zmq_msg_init_data (_Out_ zmq_msg_t *msg_,

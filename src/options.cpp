@@ -67,7 +67,7 @@ static int do_getsockopt_curve_key (void *const optval_,
     }
     if (*optvallen_ == CURVE_KEYSIZE_Z85 + 1) {
         (void) zmq_z85_encode (static_cast<char *> (optval_), curve_key_,
-                        CURVE_KEYSIZE);
+                               CURVE_KEYSIZE);
         return 0;
     }
     return sockopt_invalid ();

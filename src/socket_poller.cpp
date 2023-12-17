@@ -263,7 +263,8 @@ int zmq::socket_poller_t::rebuild ()
     if (_pollset_size == 0)
         return 0;
 
-    _pollfds = static_cast<pollfd *> (std::malloc (_pollset_size * sizeof (pollfd)));
+    _pollfds =
+      static_cast<pollfd *> (std::malloc (_pollset_size * sizeof (pollfd)));
 
     if (!_pollfds) {
         errno = ENOMEM;

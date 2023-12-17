@@ -58,8 +58,9 @@ zmq::hvsocket_open_socket (const char *address_,
     }
 
     if (options_.hvsocket_connected_suspend) {
-        rc = setsockopt (s, HV_PROTOCOL_RAW, HVSOCKET_CONNECTED_SUSPEND,
-                         (const char *) &non_zero_value, sizeof (non_zero_value));
+        rc =
+          setsockopt (s, HV_PROTOCOL_RAW, HVSOCKET_CONNECTED_SUSPEND,
+                      (const char *) &non_zero_value, sizeof (non_zero_value));
 #ifndef NDEBUG
         zmq_assert (rc == 0);
 #else
@@ -68,8 +69,9 @@ zmq::hvsocket_open_socket (const char *address_,
     }
 
     if (options_.hvsocket_high_vtl) {
-        rc = setsockopt (s, HV_PROTOCOL_RAW, HVSOCKET_HIGH_VTL,
-                         (const char *) &non_zero_value, sizeof (non_zero_value));
+        rc =
+          setsockopt (s, HV_PROTOCOL_RAW, HVSOCKET_HIGH_VTL,
+                      (const char *) &non_zero_value, sizeof (non_zero_value));
 #ifndef NDEBUG
         zmq_assert (rc == 0);
 #else
@@ -79,8 +81,8 @@ zmq::hvsocket_open_socket (const char *address_,
 
     if (options_.connect_timeout > 0) {
         rc = setsockopt (s, HV_PROTOCOL_RAW, HVSOCKET_CONNECT_TIMEOUT,
-                    (const char *) &options_.connect_timeout,
-                    sizeof (options_.connect_timeout));
+                         (const char *) &options_.connect_timeout,
+                         sizeof (options_.connect_timeout));
 #ifndef NDEBUG
         zmq_assert (rc == 0);
 #endif

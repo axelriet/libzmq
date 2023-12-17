@@ -25,8 +25,8 @@
 #endif
 
 zmq::vsock_listener_t::vsock_listener_t (io_thread_t *io_thread_,
-                                       socket_base_t *socket_,
-                                       const options_t &options_) :
+                                         socket_base_t *socket_,
+                                         const options_t &options_) :
     stream_listener_base_t (io_thread_, socket_, options_)
 {
 }
@@ -48,7 +48,7 @@ void zmq::vsock_listener_t::in_event ()
 
 std::string
 zmq::vsock_listener_t::get_socket_name (zmq::fd_t fd_,
-                                       socket_end_t socket_end_) const
+                                        socket_end_t socket_end_) const
 {
     struct sockaddr_storage ss;
     const zmq_socklen_t sl = get_socket_address (fd_, socket_end_, &ss);
@@ -58,7 +58,7 @@ zmq::vsock_listener_t::get_socket_name (zmq::fd_t fd_,
     }
 
     const vsock_address_t addr (reinterpret_cast<struct sockaddr *> (&ss), sl,
-                               this->get_ctx ());
+                                this->get_ctx ());
 
     std::string address_string;
     addr.to_string (address_string);
@@ -88,8 +88,8 @@ int zmq::vsock_listener_t::set_local_address (const char *addr_)
     //  Create a listening socket.
     //
 
-    _s =
-      open_socket (this->get_ctx ()->get_vsock_socket_family (), SOCK_STREAM, 0);
+    _s = open_socket (this->get_ctx ()->get_vsock_socket_family (), SOCK_STREAM,
+                      0);
 
 #ifdef ZMQ_HAVE_WINDOWS
     if (_s == INVALID_SOCKET) {

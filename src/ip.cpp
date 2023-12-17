@@ -507,8 +507,7 @@ static int make_fdpair_tcpip (zmq::fd_t *r_, zmq::fd_t *w_)
 
 #ifdef _MSC_VER
 #pragma warning(push)
-#pragma warning(                                                               \
-    disable : 4127) // conditional expression is constant
+#pragma warning(disable : 4127) // conditional expression is constant
 #endif
         if (zmq::signaler_port == event_signaler_port)
 #ifdef _MSC_VER

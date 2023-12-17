@@ -281,7 +281,7 @@ void generic_mtrie_t<T>::rm (value_t *pipe_,
                                     > it.new_max)
                                     it.new_max =
                                       (unsigned char) (it.current_child
-                                      + it.node->_min);
+                                                       + it.node->_min);
                             }
                         }
 
@@ -355,7 +355,7 @@ void generic_mtrie_t<T>::rm (value_t *pipe_,
                                     it.node->_next.table =
                                       static_cast<generic_mtrie_t **> (
                                         std::malloc (sizeof (generic_mtrie_t *)
-                                                * it.node->_count));
+                                                     * it.node->_count));
                                     alloc_assert (it.node->_next.table);
 
                                     memmove (it.node->_next.table,

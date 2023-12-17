@@ -23,23 +23,23 @@ zmq::vsock_address_t::vsock_address_t (ctx_t *parent_) : parent (parent_)
 }
 
 zmq::vsock_address_t::vsock_address_t (const sockaddr *sa,
-                                     socklen_t sa_len,
-                                     ctx_t *parent_) :
+                                       socklen_t sa_len,
+                                       ctx_t *parent_) :
     parent (parent_)
 {
     zmq_assert (sa && sa_len > 0);
 
-    memset (&address, 0, sizeof(address));
+    memset (&address, 0, sizeof (address));
 
     if (sa->sa_family == parent->get_vsock_socket_family ()) {
-        zmq_assert (sa_len <= sizeof(address));
+        zmq_assert (sa_len <= sizeof (address));
         memcpy (&address, sa, sa_len);
     }
 }
 
 int zmq::vsock_address_t::resolve (const char *path_)
 {
-    memset(&address, 0, sizeof(address));
+    memset (&address, 0, sizeof (address));
 
     //
     //  Find the ':' at end that separates address from the port number.
@@ -93,8 +93,8 @@ int zmq::vsock_address_t::resolve (const char *path_)
             const char *begin = addr_str.c_str ();
             const unsigned long p = strtoul (begin, &end, 10);
 
-            if ((p == 0 && end == begin)
-                || (p == ULONG_MAX && errno == ERANGE) || p > UINT_MAX) {
+            if ((p == 0 && end == begin) || (p == ULONG_MAX && errno == ERANGE)
+                || p > UINT_MAX) {
                 errno = EINVAL;
                 return -1;
             }

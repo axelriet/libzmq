@@ -162,8 +162,9 @@ int zmq::curve_client_t::produce_initiate (msg_t *msg_)
     int rc = msg_->init_size (msg_size);
     errno_assert (rc == 0);
 
-    rc = _tools.produce_initiate (msg_->datap (), msg_size, get_and_inc_nonce (),
-                                  &metadata_plaintext[0], metadata_length);
+    rc =
+      _tools.produce_initiate (msg_->datap (), msg_size, get_and_inc_nonce (),
+                               &metadata_plaintext[0], metadata_length);
 
     if (-1 == rc) {
         session->get_socket ()->event_handshake_failed_protocol (

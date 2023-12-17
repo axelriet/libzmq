@@ -732,8 +732,8 @@ int zmq::hvsocket_address_t::resolve (const char *path_)
                     // On Windows, we auto-register the service id port number.
                     //
 
-                    (void) RegisterNamedHvSocketServiceId (port_str.c_str (),
-                        address.ServiceId, TRUE);
+                    (void) RegisterNamedHvSocketServiceId (
+                      port_str.c_str (), address.ServiceId, TRUE);
 #endif
                 } else {
                     //
@@ -750,8 +750,8 @@ int zmq::hvsocket_address_t::resolve (const char *path_)
             // On Windows, we auto-register the service id.
             //
 
-            (void) RegisterNamedHvSocketServiceId (("Service-" + port_str).c_str (),
-                address.ServiceId, TRUE);
+            (void) RegisterNamedHvSocketServiceId (
+              ("Service-" + port_str).c_str (), address.ServiceId, TRUE);
 #endif
         }
     }
