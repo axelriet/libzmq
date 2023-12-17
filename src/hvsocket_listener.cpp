@@ -25,8 +25,8 @@
 #endif
 
 zmq::hvsocket_listener_t::hvsocket_listener_t (io_thread_t *io_thread_,
-                                       socket_base_t *socket_,
-                                       const options_t &options_) :
+                                               socket_base_t *socket_,
+                                               const options_t &options_) :
     stream_listener_base_t (io_thread_, socket_, options_)
 {
 }
@@ -48,7 +48,7 @@ void zmq::hvsocket_listener_t::in_event ()
 
 std::string
 zmq::hvsocket_listener_t::get_socket_name (zmq::fd_t fd_,
-                                       socket_end_t socket_end_) const
+                                           socket_end_t socket_end_) const
 {
     struct sockaddr_storage ss;
     const zmq_socklen_t sl = get_socket_address (fd_, socket_end_, &ss);
@@ -56,8 +56,8 @@ zmq::hvsocket_listener_t::get_socket_name (zmq::fd_t fd_,
         return std::string ();
     }
 
-    const hvsocket_address_t addr (reinterpret_cast<struct sockaddr *> (&ss), sl,
-                               this->get_ctx ());
+    const hvsocket_address_t addr (reinterpret_cast<struct sockaddr *> (&ss),
+                                   sl, this->get_ctx ());
     std::string address_string;
     addr.to_string (address_string);
     return address_string;
@@ -81,7 +81,7 @@ int zmq::hvsocket_listener_t::set_local_address (const char *addr_)
     if (rc != 0) {
         return -1;
     }
-                          
+
     //
     //  Create a listening socket.
     //

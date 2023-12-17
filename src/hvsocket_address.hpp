@@ -55,7 +55,6 @@ class hvsocket_address_t
     socklen_t addrlen () const;
 
   private:
-
     SOCKADDR_HV address;
     ctx_t *parent;
 

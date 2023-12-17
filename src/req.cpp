@@ -136,7 +136,8 @@ int zmq::req_t::xrecv (msg_t *msg_)
         if (rc != 0)
             return rc;
 
-        if (unlikely (!(msg_->flagsp () & msg_t::more) || msg_->sizep () != 0)) {
+        if (unlikely (!(msg_->flagsp () & msg_t::more)
+                      || msg_->sizep () != 0)) {
             //  Skip the remaining frames and try the next message
             while (msg_->flagsp () & msg_t::more) {
                 rc = recv_reply_pipe (msg_);

@@ -146,7 +146,8 @@ void zmq::socks_connecter_t::out_event ()
         if (rc == -1)
             error ();
         else {
-            _greeting_encoder.encode (socks_greeting_t ((unsigned char)_auth_method));
+            _greeting_encoder.encode (
+              socks_greeting_t ((unsigned char) _auth_method));
             _status = sending_greeting;
         }
     } else if (_status == sending_greeting) {

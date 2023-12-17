@@ -29,9 +29,8 @@ typedef char
 #ifdef ZMQ_HAVE_CUSTOM_ALLOCATOR
 namespace zmq
 {
-_Must_inspect_result_ _Ret_opt_bytecap_ (
-  cb) static void * ZMQ_CDECL default_msg_alloc (_In_ size_t cb,
-                                                ZMQ_MSG_ALLOC_HINT hint)
+_Must_inspect_result_ _Ret_opt_bytecap_ (cb) static void *ZMQ_CDECL
+  default_msg_alloc (_In_ size_t cb, ZMQ_MSG_ALLOC_HINT hint)
 {
 #ifndef NDEBUG
     if (hint < ZMQ_MSG_ALLOC_HINT_NONE || hint > ZMQ_MSG_ALLOC_HINT_MAX) {
@@ -177,8 +176,8 @@ int zmq::msg_t::init_size (size_t size_)
 #endif
 #else
 #ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
-        _u.lmsg.content =
-          static_cast<content_t *> (scalable_malloc (sizeof (content_t) + size_));
+        _u.lmsg.content = static_cast<content_t *> (
+          scalable_malloc (sizeof (content_t) + size_));
 #else
         _u.lmsg.content =
           static_cast<content_t *> (std::malloc (sizeof (content_t) + size_));
@@ -391,7 +390,8 @@ int zmq::msg_t::close ()
                 _u.lmsg.content->ffn (_u.lmsg.content->data,
                                       _u.lmsg.content->hint);
 #ifdef ZMQ_HAVE_CUSTOM_ALLOCATOR
-            zmq::free (_u.lmsg.content, _u.lmsg.content->custom_allocation_hint);
+            zmq::free (_u.lmsg.content,
+                       _u.lmsg.content->custom_allocation_hint);
 #else
 #ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
             scalable_free (_u.lmsg.content);
@@ -534,7 +534,7 @@ void zmq::msg_t::shrink (size_t new_size_)
 
 unsigned char zmq::msg_t::flags () const
 {
-    return flagsp();
+    return flagsp ();
 }
 
 void zmq::msg_t::set_flags (unsigned char flags_)
@@ -574,8 +574,7 @@ size_t zmq::msg_t::command_body_size () const
 {
     if (is_ping () || is_pong ())
         return sizep () - ping_cmd_name_size;
-    else if (!(flags () & msg_t::command)
-             && (is_subscribe () || is_cancel ()))
+    else if (!(flags () & msg_t::command) && (is_subscribe () || is_cancel ()))
         return sizep ();
     else if (is_subscribe ())
         return sizep () - sub_cmd_name_size;
@@ -590,17 +589,14 @@ void *zmq::msg_t::command_body ()
     unsigned char *data = NULL;
 
     if (is_ping () || is_pong ())
-        data =
-          static_cast<unsigned char *> (datap ()) + ping_cmd_name_size;
+        data = static_cast<unsigned char *> (datap ()) + ping_cmd_name_size;
     //  With inproc, command flag is not set for sub/cancel
-    else if (!(flags () & msg_t::command)
-             && (is_subscribe () || is_cancel ()))
+    else if (!(flags () & msg_t::command) && (is_subscribe () || is_cancel ()))
         data = static_cast<unsigned char *> (datap ());
     else if (is_subscribe ())
         data = static_cast<unsigned char *> (datap ()) + sub_cmd_name_size;
     else if (is_cancel ())
-        data =
-          static_cast<unsigned char *> (datap ()) + cancel_cmd_name_size;
+        data = static_cast<unsigned char *> (datap ()) + cancel_cmd_name_size;
 
     return data;
 }

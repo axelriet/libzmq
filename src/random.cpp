@@ -54,10 +54,11 @@ static void manage_random (bool init_)
 #if defined(ZMQ_USE_LIBSODIUM)
     if (init_) {
 #if defined(ZMQ_LIBSODIUM_RANDOMBYTES_CLOSE)
-        if (cryptolib_refcount.add (1) == 0) {`
+        if (cryptolib_refcount.add (1) == 0) {
+            `
 #endif
-            // sodium_init() is thread-safe and idempotent
-            int rc = sodium_init ();
+              // sodium_init() is thread-safe and idempotent
+              int rc = sodium_init ();
             zmq_assert (rc != -1);
 #if defined(ZMQ_LIBSODIUM_RANDOMBYTES_CLOSE)
         }

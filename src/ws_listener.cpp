@@ -93,7 +93,7 @@ zmq::ws_listener_t::ws_listener_t (io_thread_t *io_thread_,
         int rc = mbedtls_ctr_drbg_seed (
           _rng.get (), mbedtls_entropy_func, _entropy.get (),
           (const unsigned char *) "zmq_wss_listener", 16);
-        
+
         zmq_assert (rc == 0);
 
         mbedtls_ssl_conf_rng (_ssl_config.get (), mbedtls_ctr_drbg_random,
@@ -153,7 +153,7 @@ zmq::ws_listener_t::ws_listener_t (io_thread_t *io_thread_,
         if (options_.wss_cert_pem.length () > 0) {
             rc = mbedtls_ssl_conf_own_cert (_ssl_config.get (),
                                             _ssl_server_cert.get (),
-                                   _ssl_server_pkey.get ());
+                                            _ssl_server_pkey.get ());
             zmq_assert (rc == 0);
         }
 

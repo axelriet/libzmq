@@ -81,7 +81,6 @@ class vsock_address_t
     socklen_t addrlen () const;
 
   private:
-
     struct sockaddr_vsock address;
     ctx_t *parent;
 

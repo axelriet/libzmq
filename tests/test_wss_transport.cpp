@@ -114,8 +114,8 @@ void test_roundtrip ()
       zmq_getsockopt (sb, ZMQ_LAST_ENDPOINT, bind_address, &addr_length));
 
     // Windows can't connect to 0.0.0.0
-    snprintf (connect_address, MAX_SOCKET_STRING,
-              "wss://127.0.0.1%s", strrchr (bind_address, ':'));
+    snprintf (connect_address, MAX_SOCKET_STRING, "wss://127.0.0.1%s",
+              strrchr (bind_address, ':'));
 
     TEST_ASSERT_SUCCESS_ERRNO (zmq_connect (sc, connect_address));
 

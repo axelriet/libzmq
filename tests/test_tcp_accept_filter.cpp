@@ -168,7 +168,7 @@ void test_set_non_matching ()
     test_context_socket_close_zero_linger (bind_socket);
 }
 
-int ZMQ_CDECL main ()
+int main ()
 {
     setup_test_environment ();
 

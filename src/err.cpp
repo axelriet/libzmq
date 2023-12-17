@@ -89,7 +89,8 @@ _Ret_z_ const char *zmq::wsa_error_no (int no_)
         case WSAEMFILE:
             return "Too many open files";
         case WSAEWOULDBLOCK:
-            return "A non-blocking socket operation could not be completed immediately";
+            return "A non-blocking socket operation could not be completed "
+                   "immediately";
         case WSAEINPROGRESS:
             return "Operation now in progress";
         case WSAEALREADY:

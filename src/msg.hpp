@@ -278,7 +278,7 @@ class msg_t
 
     int set_routing_id (uint32_t routing_id_);
     int reset_routing_id ();
-    
+
     _Ret_z_ const char *zmq::msg_t::group () const
     {
         if (_u.base.group.type == group_type_long)
@@ -325,7 +325,6 @@ class msg_t
     };
 
   private:
-
     zmq::atomic_counter_t *refcnt ();
 
     //  Message types.

@@ -63,9 +63,9 @@ void benchmark_lookup (T &subscriptions_,
 
 int
 #ifdef _MSC_VER
-__cdecl
+  __cdecl
 #endif
-main ()
+  main ()
 {
     // Generate input set.
     std::minstd_rand rng;

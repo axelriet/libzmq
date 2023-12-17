@@ -56,14 +56,25 @@ class c_single_allocator
 #endif
     }
 
-    unsigned char *allocate () { return _buf; }
+    unsigned char *allocate ()
+    {
+        return _buf;
+    }
 
-    void deallocate () {}
+    void deallocate ()
+    {
+    }
 
-    std::size_t size () const { return _buf_size; }
+    std::size_t size () const
+    {
+        return _buf_size;
+    }
 
     //  This buffer is fixed, size must not be changed
-    void resize (std::size_t new_size_) { LIBZMQ_UNUSED (new_size_); }
+    void resize (std::size_t new_size_)
+    {
+        LIBZMQ_UNUSED (new_size_);
+    }
 
   private:
     std::size_t _buf_size;

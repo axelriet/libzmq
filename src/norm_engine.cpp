@@ -16,7 +16,7 @@
 #ifdef _MSC_VER
 // Disable truncations and hiding
 // warnings, this code needs work :(
-#pragma warning (disable : 4244 4245 4310 4456)
+#pragma warning(disable : 4244 4245 4310 4456)
 #endif
 
 #ifdef ZMQ_USE_NORM_SOCKET_WRAPPER
@@ -281,7 +281,7 @@ void zmq::norm_engine_t::shutdown ()
     }
 } // end zmq::norm_engine_t::shutdown()
 
-void zmq::norm_engine_t::plug (io_thread_t */*io_thread_*/,
+void zmq::norm_engine_t::plug (io_thread_t * /*io_thread_*/,
                                session_base_t *session_)
 {
 #ifdef ZMQ_USE_NORM_SOCKET_WRAPPER
@@ -473,7 +473,7 @@ void zmq::norm_engine_t::in_event ()
 #ifndef NDEBUG
                     memset (rxState, 0, sizeof (NormRxStreamState));
 #endif
-                   delete rxState;
+                    delete rxState;
                 }
             }
             break;
@@ -756,7 +756,8 @@ int zmq::norm_engine_t::NormRxStreamState::Decode ()
                 break;
 
             default:
-                zmq_abort ("Unexpected value returned from zmq_decoder->decode()");
+                zmq_abort (
+                  "Unexpected value returned from zmq_decoder->decode()");
         }
     }
     // Reset buffer pointer/count for next read

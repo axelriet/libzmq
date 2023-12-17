@@ -90,7 +90,7 @@ zmq::ip_addr_t zmq::ip_addr_t::any (
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(                                                               \
-    disable : 4130) // '==': logical operation on address of string constant
+  disable : 4130) // '==': logical operation on address of string constant
 #endif
         zmq_assert (0 == "unsupported address family");
 #ifdef _MSC_VER

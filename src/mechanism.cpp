@@ -204,7 +204,8 @@ void zmq::mechanism_t::make_command_with_basic_properties (
     ptr += prefix_len_;
 
     add_basic_properties (
-      ptr, command_size - (ptr - static_cast<unsigned char *> (msg_->datap ())));
+      ptr,
+      command_size - (ptr - static_cast<unsigned char *> (msg_->datap ())));
 }
 
 int zmq::mechanism_t::parse_metadata (const unsigned char *ptr_,

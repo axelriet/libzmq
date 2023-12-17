@@ -24,7 +24,7 @@ class wss_engine_t : public ws_engine_t
                   ws_address_t &address_,
                   bool client_,
 #if defined ZMQ_USE_MBEDTLS
-                  std::unique_ptr<mbedtls_ssl_context>& _ssl,
+                  std::unique_ptr<mbedtls_ssl_context> &_ssl,
 #else
                   void *tls_server_cred_,
 #endif
@@ -50,7 +50,7 @@ class wss_engine_t : public ws_engine_t
 
 #if defined ZMQ_USE_MBEDTLS
     mbedtls_ssl_context ssl;
-    std::unique_ptr <mbedtls_x509_crt> _tls_client_cred;
+    std::unique_ptr<mbedtls_x509_crt> _tls_client_cred;
 #elif defined ZMQ_USE_GNUTLS
     gnutls_certificate_credentials_t _tls_client_cred;
     gnutls_session_t _tls_session;

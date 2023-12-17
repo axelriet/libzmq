@@ -47,10 +47,10 @@ extern "C" {
 #define ZMQ_LINKAGE
 #define ZMQ_CDECL __cdecl
 #elif defined DLL_EXPORT
-#define ZMQ_LINKAGE __declspec (dllexport)
+#define ZMQ_LINKAGE __declspec(dllexport)
 #define ZMQ_CDECL __cdecl
 #else
-#define ZMQ_LINKAGE __declspec (dllimport)
+#define ZMQ_LINKAGE __declspec(dllimport)
 #define ZMQ_CDECL __cdecl
 #endif
 #else
@@ -304,7 +304,7 @@ zmq_set_custom_msg_allocator (_In_ zmq_custom_msg_alloc_fn *malloc_,
 
 _At_ (msg_, _Pre_invalid_ _Pre_notnull_ _Post_valid_) ZMQ_EXPORT (int)
   zmq_msg_init (_Out_ zmq_msg_t *msg_);
-  _At_ (msg_, _Pre_invalid_ _Pre_notnull_ _Post_valid_) ZMQ_EXPORT (int)
+_At_ (msg_, _Pre_invalid_ _Pre_notnull_ _Post_valid_) ZMQ_EXPORT (int)
   zmq_msg_init_size (_Out_ zmq_msg_t *msg_, size_t size_);
 _At_ (msg_, _Pre_invalid_ _Pre_notnull_ _Post_valid_) ZMQ_EXPORT (int)
   zmq_msg_init_data (_Out_ zmq_msg_t *msg_,
