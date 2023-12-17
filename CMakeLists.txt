@@ -1599,6 +1599,10 @@ if(BUILD_STATIC)
   if(OPENPGM_FOUND)
       target_link_libraries(libzmq-static ${OPENPGM_LIBRARIES})
   endif()
+
+  if(TBB_MALLOC_FOUND)
+    target_link_libraries(libzmq-static ${TBB_MALLOC_LIBS})
+  endif()
 endif()
 
 if(BUILD_SHARED)
