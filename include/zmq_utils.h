@@ -16,7 +16,7 @@
 #pragma GCC diagnostic ignored "-Wall"
 #endif
 #pragma message(                                                               \
-    "Warning: zmq_utils.h is deprecated. All its functionality is provided by zmq.h.")
+  "Warning: zmq_utils.h is deprecated. All its functionality is provided by zmq.h.")
 #if defined(__GNUC__) || defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif

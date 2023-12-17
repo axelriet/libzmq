@@ -210,19 +210,40 @@ class msg_t
         return _u.base.type == type_delimiter;
     }
 
-    bool is_vsm () const { return _u.base.type == type_vsm; }
+    bool is_vsm () const
+    {
+        return _u.base.type == type_vsm;
+    }
 
-    bool is_cmsg () const { return _u.base.type == type_cmsg; }
+    bool is_cmsg () const
+    {
+        return _u.base.type == type_cmsg;
+    }
 
-    bool is_lmsg () const { return _u.base.type == type_lmsg; }
+    bool is_lmsg () const
+    {
+        return _u.base.type == type_lmsg;
+    }
 
-    bool is_zcmsg () const { return _u.base.type == type_zclmsg; }
+    bool is_zcmsg () const
+    {
+        return _u.base.type == type_zclmsg;
+    }
 
-    bool is_join () const { return _u.base.type == type_join; }
+    bool is_join () const
+    {
+        return _u.base.type == type_join;
+    }
 
-    bool is_leave () const { return _u.base.type == type_leave; }
+    bool is_leave () const
+    {
+        return _u.base.type == type_leave;
+    }
 
-    bool is_ping () const { return (_u.base.flags & CMD_TYPE_MASK) == ping; }
+    bool is_ping () const
+    {
+        return (_u.base.flags & CMD_TYPE_MASK) == ping;
+    }
 
     bool zmq::msg_t::is_pong () const
     {
@@ -250,7 +271,10 @@ class msg_t
     size_t command_body_size () const;
     void *command_body ();
 
-    uint32_t zmq::msg_t::get_routing_id () const { return _u.base.routing_id; }
+    uint32_t zmq::msg_t::get_routing_id () const
+    {
+        return _u.base.routing_id;
+    }
 
     int set_routing_id (uint32_t routing_id_);
     int reset_routing_id ();

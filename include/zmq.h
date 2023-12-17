@@ -47,10 +47,10 @@ extern "C" {
 #define ZMQ_LINKAGE
 #define ZMQ_CDECL __cdecl
 #elif defined DLL_EXPORT
-#define ZMQ_LINKAGE __declspec (dllexport)
+#define ZMQ_LINKAGE __declspec(dllexport)
 #define ZMQ_CDECL __cdecl
 #else
-#define ZMQ_LINKAGE __declspec (dllimport)
+#define ZMQ_LINKAGE __declspec(dllimport)
 #define ZMQ_CDECL __cdecl
 #endif
 #else
@@ -267,10 +267,10 @@ ZMQ_EXPORT (int) zmq_ctx_destroy (_In_ _Post_invalid_ void *context_);
 typedef struct zmq_msg_t
 {
 #if defined(_MSC_VER) && (defined(_M_X64) || defined(_M_ARM64))
-    __declspec (align (8)) unsigned char _[64];
+    __declspec(align (8)) unsigned char _[64];
 #elif defined(_MSC_VER)                                                        \
   && (defined(_M_IX86) || defined(_M_ARM_ARMV7VE) || defined(_M_ARM))
-    __declspec (align (4)) unsigned char _[64];
+    __declspec(align (4)) unsigned char _[64];
 #elif defined(__GNUC__) || defined(__INTEL_COMPILER)                           \
   || (defined(__SUNPRO_C) && __SUNPRO_C >= 0x590)                              \
   || (defined(__SUNPRO_CC) && __SUNPRO_CC >= 0x590)
