@@ -107,7 +107,8 @@ const char *HintToString (_In_ ZMQ_MSG_ALLOC_HINT hint)
 #include <tbb/scalable_allocator.h>
 #endif
 
-#define USE_HEAPALLOC
+// #define USE_HEAPALLOC
+
 #define KEEP_ASIDE_HWM 1000
 
 #ifdef USE_HEAPALLOC
@@ -132,9 +133,9 @@ _Must_inspect_result_ _Ret_opt_bytecap_ (cb) void *ZMQ_CDECL
             // as the returned blocks are overwritten with the SList
             // Next pointer, so we need at least a pointer's size.
 #ifdef USE_HEAPALLOC
-            return HeapAlloc (hHeap, 0, std::max (cb, sizeof (SLIST_ENTRY)));
+            return HeapAlloc (hHeap, 0, max (cb, sizeof (SLIST_ENTRY)));
 #else
-            return malloc (std::max (cb, sizeof (SLIST_ENTRY)));
+            return malloc (max (cb, sizeof (SLIST_ENTRY)));
 #endif
         }
     } else {

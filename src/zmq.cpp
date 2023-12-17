@@ -1875,9 +1875,9 @@ ZMQ_EXPORT_IMPL (int) zmq_has (_In_z_ const char *capability_)
     // Built-in transports
     //
 
-    if (strcmp (capability_, zmq::protocol_name::inproc) == 0
-        || strcmp (capability_, zmq::protocol_name::tcp) == 0
-        || strcmp (capability_, zmq::protocol_name::udp) == 0)
+    if ((strcmp (capability_, zmq::protocol_name::inproc) == 0)
+        || (strcmp (capability_, zmq::protocol_name::tcp) == 0)
+        || (strcmp (capability_, zmq::protocol_name::udp) == 0))
         return true;
 
     //
@@ -1888,37 +1888,49 @@ ZMQ_EXPORT_IMPL (int) zmq_has (_In_z_ const char *capability_)
     if (strcmp (capability_, zmq::protocol_name::ipc) == 0)
         return true;
 #endif
+
+#if defined(ZMQ_HAVE_WS)
+    if (strcmp (capability_, zmq::protocol_name::ws) == 0)
+        return true;
+#endif
+
+#if defined(ZMQ_HAVE_WSS)
+    if (strcmp (capability_, zmq::protocol_name::wss) == 0)
+        return true;
+#endif
+
+    //
+    // Optional transport adapters (config/build time)
+    //
+
 #if defined(ZMQ_HAVE_OPENPGM)
     if ((strcmp (capability_, zmq::protocol_name::pgm) == 0)
         || strcmp (capability_, zmq::protocol_name::epgm) == 0)
         return true;
 #endif
+
 #if defined(ZMQ_HAVE_TIPC)
     if (strcmp (capability_, zmq::protocol_name::tipc) == 0)
         return true;
 #endif
+
 #if defined(ZMQ_HAVE_NORM)
     if (strcmp (capability_, zmq::protocol_name::norm) == 0)
         return true;
 #endif
+
 #if defined(ZMQ_HAVE_VMCI)
     if (strcmp (capability_, zmq::protocol_name::vmci) == 0)
         return true;
 #endif
+
 #if defined(ZMQ_HAVE_VSOCK)
     if (strcmp (capability_, zmq::protocol_name::vsock) == 0)
         return true;
 #endif
+
 #if defined(ZMQ_HAVE_HVSOCKET)
     if (strcmp (capability_, zmq::protocol_name::hvsocket) == 0)
-        return true;
-#endif
-#if defined(ZMQ_HAVE_WS)
-    if (strcmp (capability_, zmq::protocol_name::ws) == 0)
-        return true;
-#endif
-#if defined(ZMQ_HAVE_WSS)
-    if (strcmp (capability_, zmq::protocol_name::wss) == 0)
         return true;
 #endif
 
@@ -1930,8 +1942,23 @@ ZMQ_EXPORT_IMPL (int) zmq_has (_In_z_ const char *capability_)
     if (strcmp (capability_, "curve") == 0)
         return true;
 #endif
+
 #if defined(HAVE_LIBGSSAPI_KRB5)
     if (strcmp (capability_, "gssapi") == 0)
+        return true;
+#endif
+
+    //
+    // Optional features (config/build time)
+    //
+
+#if defined(ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR)
+    if (strcmp (capability_, "tbballoc") == 0)
+        return true;
+#endif
+
+#if defined(ZMQ_HAVE_CUSTOM_ALLOCATOR)
+    if (strcmp (capability_, "customalloc") == 0)
         return true;
 #endif
 
@@ -1945,7 +1972,7 @@ ZMQ_EXPORT_IMPL (int) zmq_has (_In_z_ const char *capability_)
 #endif
 
     //
-    //  Whatever the application asked for, we don't have
+    //  Whatever the application asked for, we don't have.
     //
 
     return false;

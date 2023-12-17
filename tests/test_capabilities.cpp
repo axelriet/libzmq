@@ -31,6 +31,22 @@ void test_capabilities ()
     TEST_ASSERT_FALSE (zmq_has ("ipc"));
 #endif
 
+#if defined(ZMQ_HAVE_WS)
+    TEST_ASSERT_TRUE (zmq_has ("ws"));
+#else
+    TEST_ASSERT_FALSE (zmq_has ("ws"));
+#endif
+
+#if defined(ZMQ_HAVE_WSS)
+    TEST_ASSERT_TRUE (zmq_has ("wss"));
+#else
+    TEST_ASSERT_FALSE (zmq_has ("wss"));
+#endif
+
+    //
+    // Optional transport adapters (config/build time)
+    //
+
 #if defined(ZMQ_HAVE_OPENPGM)
     TEST_ASSERT_TRUE (zmq_has ("pgm"));
     TEST_ASSERT_TRUE (zmq_has ("epgm"));
@@ -64,21 +80,9 @@ void test_capabilities ()
 #endif
 
 #if defined(ZMQ_HAVE_HVSOCKET)
-    TEST_ASSERT_TRUE (zmq_has ("hv"));
+    TEST_ASSERT_TRUE (zmq_has ("hyperv"));
 #else
-    TEST_ASSERT_FALSE (zmq_has ("hv"));
-#endif
-
-#if defined(ZMQ_HAVE_WS)
-    TEST_ASSERT_TRUE (zmq_has ("ws"));
-#else
-    TEST_ASSERT_FALSE (zmq_has ("ws"));
-#endif
-
-#if defined(ZMQ_HAVE_WSS)
-    TEST_ASSERT_TRUE (zmq_has ("wss"));
-#else
-    TEST_ASSERT_FALSE (zmq_has ("wss"));
+    TEST_ASSERT_FALSE (zmq_has ("hyperv"));
 #endif
 
     //
@@ -95,6 +99,22 @@ void test_capabilities ()
     TEST_ASSERT_TRUE (zmq_has ("gssapi"));
 #else
     TEST_ASSERT_FALSE (zmq_has ("gssapi"));
+#endif
+
+    //
+    // Optional features (config/build time)
+    //
+
+#if defined(ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR)
+    TEST_ASSERT_TRUE (zmq_has ("tbballoc"));
+#else
+    TEST_ASSERT_FALSE (zmq_has ("tbballoc"));
+#endif
+
+#if defined(ZMQ_HAVE_CUSTOM_ALLOCATOR)
+    TEST_ASSERT_TRUE (zmq_has ("customalloc"));
+#else
+    TEST_ASSERT_FALSE (zmq_has ("customalloc"));
 #endif
 
     //

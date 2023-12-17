@@ -17,12 +17,38 @@ SETUP_TEARDOWN_TESTCONTEXT
 
 void test (const char *address)
 {
+    size_t len = MAX_SOCKET_STRING;
+
     //  Create a publisher
     void *publisher = test_context_socket (ZMQ_PUB);
     char my_endpoint[MAX_SOCKET_STRING];
 
-    //  Bind publisher
-    test_bind (publisher, address, my_endpoint, MAX_SOCKET_STRING);
+    //
+    // Bind publisher. It is possible that the
+    // library is built to support some transport that
+    // is not available on the test system. That is OK,
+    // for example the test system cannot possibly run
+    // in a Hyper-V hosted VM *and* a KVM-hosted VM at
+    // the same time but the library can be built with
+    // support for both Hyper-V and VSock transports,
+    // so it is OK to ignore the test if the AF isn't
+    // supported _on the test system_.
+    //
+
+    if (zmq_bind (publisher, address) == -1) {
+        test_context_socket_close (publisher);
+        if (zmq_errno () == EAFNOSUPPORT) {
+            TEST_IGNORE_MESSAGE (
+              "Address family not supported on this system, ignoring test.");
+        } else {
+            test_assert_success_message_errno_helper (
+              -1, NULL, "zmq_bind (publisher, address)", __LINE__);
+        }
+    }
+
+    //  Retrieve the effective endpoint
+    TEST_ASSERT_SUCCESS_ERRNO (
+      zmq_getsockopt (publisher, ZMQ_LAST_ENDPOINT, my_endpoint, &len));
 
     //  Create a subscriber
     void *subscriber = test_context_socket (ZMQ_SUB);
@@ -290,8 +316,8 @@ void test_vsock ()
 void test_hvsocket ()
 {
 #if defined ZMQ_HAVE_HVSOCKET
-    test ("hv://e0e16197-dd56-4a10-9195-5ee7a155a838:*"); // Loopback, any port.
-    test ("hv://loopback:3333"); // Loopback, specific port with VSOCK template.
+    test ("hyperv://e0e16197-dd56-4a10-9195-5ee7a155a838:*"); // Loopback, any port.
+    test ("hyperv://loopback:3333"); // Loopback, specific port with VSOCK template.
 
     //
     // The following tests are machine and/or VM specifics are are meant
@@ -302,20 +328,20 @@ void test_hvsocket ()
 
 #if 0
 
-    test ("hv://0:*"); // VM/container index (first one), any port.
-    test ("hv://0:4444"); // VM/container index (first one), specific port with VSOCK template.
-    test ("hv://0:44622b22-7665-4499-b2e3-16d5f9bc14d3"); // VM/container index (first one), explicit (registered) service id.
-    test ("hv://0:NMBus"); // VM/container index (first one), explicit (registered) service id by "ElementName"
+    test ("hyperv://0:*"); // VM/container index (first one), any port.
+    test ("hyperv://0:4444"); // VM/container index (first one), specific port with VSOCK template.
+    test ("hyperv://0:44622b22-7665-4499-b2e3-16d5f9bc14d3"); // VM/container index (first one), explicit (registered) service id.
+    test ("hyperv://0:NMBus"); // VM/container index (first one), explicit (registered) service id by "ElementName"
 
-    test ("hv://WinDev2311Eval:*"); // Symbolic VM/container name, any port.
-    test ("hv://WinDev2311Eval:4444"); // Symbolic VM/container name, specific port with VSOCK template.
-    test ("hv://WinDev2311Eval:44622b22-7665-4499-b2e3-16d5f9bc14d3"); // Symbolic VM/container name, explicit (registered) service id.
-    test ("hv://WinDev2311Eval:NMBus"); // Symbolic VM/container name, explicit (registered) service id by "ElementName"
+    test ("hyperv://WinDev2311Eval:*"); // Symbolic VM/container name, any port.
+    test ("hyperv://WinDev2311Eval:4444"); // Symbolic VM/container name, specific port with VSOCK template.
+    test ("hyperv://WinDev2311Eval:44622b22-7665-4499-b2e3-16d5f9bc14d3"); // Symbolic VM/container name, explicit (registered) service id.
+    test ("hyperv://WinDev2311Eval:NMBus"); // Symbolic VM/container name, explicit (registered) service id by "ElementName"
 
-    test ("hv://af5f35e3-fd7a-4573-9449-e47223939979:*"); // Explicit VM/container id, any port.
-    test ("hv://af5f35e3-fd7a-4573-9449-e47223939979:4444"); // Explicit VM/container id, specific port with VSOCK template.
-    test ("hv://af5f35e3-fd7a-4573-9449-e47223939979:44622b22-7665-4499-b2e3-16d5f9bc14d3"); // Explicit VM/container id, explicit (registered) service id.
-    test ("hv://af5f35e3-fd7a-4573-9449-e47223939979:NMBus"); // Explicit VM/container id, explicit (registered) service id by "ElementName"
+    test ("hyperv://af5f35e3-fd7a-4573-9449-e47223939979:*"); // Explicit VM/container id, any port.
+    test ("hyperv://af5f35e3-fd7a-4573-9449-e47223939979:4444"); // Explicit VM/container id, specific port with VSOCK template.
+    test ("hyperv://af5f35e3-fd7a-4573-9449-e47223939979:44622b22-7665-4499-b2e3-16d5f9bc14d3"); // Explicit VM/container id, explicit (registered) service id.
+    test ("hyperv://af5f35e3-fd7a-4573-9449-e47223939979:NMBus"); // Explicit VM/container id, explicit (registered) service id by "ElementName"
 
 #endif
 
