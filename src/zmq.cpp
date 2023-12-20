@@ -372,14 +372,14 @@ static inline int _Check_return_ s_sendmsg (_In_ zmq::socket_base_t *s_,
                                             _In_ zmq_msg_t *msg_,
                                             int flags_)
 {
-    size_t sz = ((zmq::msg_t *) msg_)->size ();
+    const size_t sz = ((zmq::msg_t *) msg_)->sizep ();
     const int rc = s_->send (reinterpret_cast<zmq::msg_t *> (msg_), flags_);
     if (unlikely (rc < 0))
         return -1;
 
     //  This is what I'd like to do, my C++ fu is too weak -- PH 2016/02/09
     //  int max_msgsz = s_->parent->get (ZMQ_MAX_MSGSZ);
-    size_t max_msgsz = INT_MAX;
+    const size_t max_msgsz = INT_MAX;
 
     //  Truncate returned size to INT_MAX to avoid overflow to negative values
     return static_cast<int> (sz < max_msgsz ? sz : max_msgsz);
@@ -504,7 +504,7 @@ s_recvmsg (_In_ zmq::socket_base_t *s_, _Inout_ zmq_msg_t *msg_, int flags_)
         return -1;
 
     //  Truncate returned size to INT_MAX to avoid overflow to negative values
-    const size_t sz = ((zmq::msg_t *) msg_)->size ();
+    const size_t sz = ((zmq::msg_t *) msg_)->sizep ();
     return static_cast<int> (sz < INT_MAX ? sz : INT_MAX);
 }
 
@@ -709,12 +709,12 @@ zmq_msg_copy (_Inout_ zmq_msg_t *dest_, _Inout_ zmq_msg_t *src_)
 
 ZMQ_EXPORT_VOID_PTR_IMPL zmq_msg_data (_In_ zmq_msg_t *msg_)
 {
-    return ((zmq::msg_t *) msg_)->data ();
+    return ((zmq::msg_t *) msg_)->datap ();
 }
 
 ZMQ_EXPORT_IMPL (size_t) zmq_msg_size (_In_ const zmq_msg_t *msg_)
 {
-    return ((zmq::msg_t *) msg_)->size ();
+    return ((zmq::msg_t *) msg_)->sizep ();
 }
 
 ZMQ_EXPORT_IMPL (int) zmq_msg_more (_In_ const zmq_msg_t *msg_)
