@@ -33,6 +33,11 @@ zmq::pgm_socket_t::pgm_socket_t (bool receiver_, const options_t &options_) :
     nbytes_processed (0),
     pgm_msgv_processed (0)
 {
+#ifndef NDEBUG
+    pgm_min_log_level = PGM_LOG_LEVEL_DEBUG;
+#else
+    pgm_min_log_level = PGM_LOG_LEVEL_ERROR;
+#endif
 }
 
 //  Resolve PGM socket address.
@@ -193,9 +198,9 @@ int zmq::pgm_socket_t::init (bool udp_encapsulation_, const char *network_)
     if (receiver) {
         const int recv_only = 1, rxw_max_tpdu = (int) options.multicast_maxtpdu,
                   rxw_sqns = compute_sqns (rxw_max_tpdu),
-                  peer_expiry = pgm_secs (600), spmr_expiry = pgm_secs (1),
-                  nak_bo_ivl = pgm_secs (2), nak_rpt_ivl = pgm_secs (2),
-                  nak_rdata_ivl = pgm_secs (2), nak_data_retries = 50,
+                  peer_expiry = pgm_secs (300), spmr_expiry = pgm_msecs (250),
+                  nak_bo_ivl = pgm_msecs (50), nak_rpt_ivl = pgm_msecs (200),
+                  nak_rdata_ivl = pgm_msecs (200), nak_data_retries = 50,
                   nak_ncf_retries = 50;
 
         if (!pgm_setsockopt (sock, IPPROTO_PGM, PGM_RECV_ONLY, &recv_only,

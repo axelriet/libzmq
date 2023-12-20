@@ -97,7 +97,11 @@ class decoder_base_t : public i_decoder
             // Only copy when destination address is different from the
             // current address in the buffer.
             if (_read_pos != data_ + bytes_used_) {
-                memcpy (_read_pos, data_ + bytes_used_, to_copy);
+                if (to_copy == 1) {
+                    *_read_pos = *(data_ + bytes_used_);
+                } else {
+                    memcpy (_read_pos, data_ + bytes_used_, to_copy);
+                }
             }
 
             _read_pos += to_copy;
