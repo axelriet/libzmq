@@ -147,7 +147,7 @@ unsigned short zmq::vmci_address_t::family () const
 sa_family_t zmq::vmci_address_t::family () const
 #endif
 {
-    return parent->get_vmci_socket_family ();
+    return (unsigned short) parent->get_vmci_socket_family ();
 }
 
 #endif

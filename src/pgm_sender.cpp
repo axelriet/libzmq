@@ -143,8 +143,10 @@ void zmq::pgm_sender_t::in_event ()
     pgm_socket.process_upstream ();
     if (errno == ENOMEM || errno == EBUSY) {
         const long timeout = pgm_socket.get_rx_timeout ();
-        add_timer (timeout, rx_timer_id);
-        has_rx_timer = true;
+        if (timeout > 0) {
+            add_timer (timeout, rx_timer_id);
+            has_rx_timer = true;
+        }
     }
 }
 
@@ -203,9 +205,11 @@ void zmq::pgm_sender_t::out_event ()
         if (errno == ENOMEM) {
             // Stop polling handle and wait for tx timeout
             const long timeout = pgm_socket.get_tx_timeout ();
-            add_timer (timeout, tx_timer_id);
-            reset_pollout (handle);
-            has_tx_timer = true;
+            if (timeout > 0) {
+                add_timer (timeout, tx_timer_id);
+                reset_pollout (handle);
+                has_tx_timer = true;
+            }
         } else
             errno_assert (errno == EBUSY);
     }

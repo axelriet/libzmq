@@ -232,8 +232,13 @@ static bool GetComputeSystemIdFromNameOrIndex (_In_z_ const char *nameOrIndex,
     bool retVal{};
     PWSTR result{};
     json_t buf[64]{};
+    unsigned long i{};
+    char *end{nullptr};
+    bool indexLookup{};
     GUID indexMatchGuid{};
+    const char *begin{nameOrIndex};
     std::wstring nameOrIndexW = ToUtf16 (nameOrIndex);
+    const unsigned long index{strtoul (begin, &end, 10)};
 
     *guid = GUID_NULL;
 
@@ -272,102 +277,99 @@ static bool GetComputeSystemIdFromNameOrIndex (_In_z_ const char *nameOrIndex,
     // there is no Name, so we must skip those entries.
     //
 
-    json_t const *json = json_create (result, buf, _countof (buf));
+    {
+        const json_t *json = json_create (result, buf, _countof (buf));
 
-    if (!json) {
-        goto cleanup;
-    }
-
-    //
-    // Minimally validate that we got what we expected.
-    //
-
-    if (json_getType (json) != JSON_ARRAY) {
-        goto cleanup;
-    }
-
-    unsigned long i{};
-    char *end{nullptr};
-    bool indexLookup{};
-    const char *begin{nameOrIndex};
-    const unsigned long index{strtoul (begin, &end, 10)};
-
-    if (end != begin && !*end) {
-        //
-        // The whole "name" is a number, so it may be an index. There
-        // is a chance that someone named their containers/vms with a
-        // number. To avoid mistaking a vm/container name's that is a
-        // number we iterate the whole list and compare the names and
-        // ensure that name matching takes precedence over index.
-        //
-
-        indexLookup = true;
-    }
-
-    for (json_t const *entry{json_getChild (json)}; entry != nullptr;
-         entry = json_getSibling (entry), i++) {
-        //
-        // Minimally validate again that we got what we expected.
-        //
-
-        if (json_getType (entry) != JSON_OBJ) {
+        if (!json) {
             goto cleanup;
         }
 
         //
-        // Some entries don't have a name and must be skipped, unless
-        // we are doing an index lookup.
+        // Minimally validate that we got what we expected.
         //
 
-        auto nameValue = json_getPropertyValue (entry, L"Name");
+        if (json_getType (json) != JSON_ARRAY) {
+            goto cleanup;
+        }
 
-        const bool indexMatch = (indexLookup && (i == index));
 
-        const bool nameMatch =
-          (nameValue && !_wcsicmp (nameValue, nameOrIndexW.c_str ()));
-
-        if (indexMatch || nameMatch) {
+        if (end != begin && !*end) {
             //
-            // Retrieve the Id property and convert it to a GUID.
+            // The whole "name" is a number, so it may be an index. There
+            // is a chance that someone named their containers/vms with a
+            // number. To avoid mistaking a vm/container name's that is a
+            // number we iterate the whole list and compare the names and
+            // ensure that name matching takes precedence over index.
             //
 
-            auto idValue = json_getPropertyValue (entry, L"Id");
+            indexLookup = true;
+        }
 
-            GUID tempGuid{};
+        for (json_t const *entry{json_getChild (json)}; entry != nullptr;
+             entry = json_getSibling (entry), i++) {
+            //
+            // Minimally validate again that we got what we expected.
+            //
 
-            if (!idValue || !GuidFromStringW (idValue, &tempGuid)) {
+            if (json_getType (entry) != JSON_OBJ) {
                 goto cleanup;
             }
 
-            if (nameMatch) {
+            //
+            // Some entries don't have a name and must be skipped, unless
+            // we are doing an index lookup.
+            //
+
+            auto nameValue = json_getPropertyValue (entry, L"Name");
+
+            const bool indexMatch = (indexLookup && (i == index));
+
+            const bool nameMatch =
+              (nameValue && !_wcsicmp (nameValue, nameOrIndexW.c_str ()));
+
+            if (indexMatch || nameMatch) {
                 //
-                // Name match gets the prize, we are done.
+                // Retrieve the Id property and convert it to a GUID.
                 //
 
-                *guid = tempGuid;
-                retVal = true;
-                goto cleanup;
-            }
+                auto idValue = json_getPropertyValue (entry, L"Id");
 
-            if (indexMatch) {
-                //
-                // Index match. Store it and continue.
-                //
+                GUID tempGuid{};
 
-                indexMatchGuid = tempGuid;
+                if (!idValue || !GuidFromStringW (idValue, &tempGuid)) {
+                    goto cleanup;
+                }
+
+                if (nameMatch) {
+                    //
+                    // Name match gets the prize, we are done.
+                    //
+
+                    *guid = tempGuid;
+                    retVal = true;
+                    goto cleanup;
+                }
+
+                if (indexMatch) {
+                    //
+                    // Index match. Store it and continue.
+                    //
+
+                    indexMatchGuid = tempGuid;
+                }
             }
         }
-    }
 
-    //
-    // If we get there then there was no name matching. If
-    // they passed a name that looks like an indice and we
-    // stored an index match, return that.
-    //
+        //
+        // If we get there then there was no name matching. If
+        // they passed a name that looks like an indice and we
+        // stored an index match, return that.
+        //
 
-    if (indexLookup && (indexMatchGuid != GUID_NULL)) {
-        *guid = indexMatchGuid;
-        retVal = true;
+        if (indexLookup && (indexMatchGuid != GUID_NULL)) {
+            *guid = indexMatchGuid;
+            retVal = true;
+        }
     }
 
 cleanup:

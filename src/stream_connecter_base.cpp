@@ -76,10 +76,12 @@ void zmq::stream_connecter_base_t::add_reconnect_timer ()
 {
     if (options.reconnect_ivl > 0) {
         const int interval = get_new_reconnect_ivl ();
-        add_timer (interval, reconnect_timer_id);
-        _socket->event_connect_retried (
-          make_unconnected_connect_endpoint_pair (_endpoint), interval);
-        _reconnect_timer_started = true;
+        if (interval > 0) {
+            add_timer (interval, reconnect_timer_id);
+            _socket->event_connect_retried (
+              make_unconnected_connect_endpoint_pair (_endpoint), interval);
+            _reconnect_timer_started = true;
+        }
     }
 }
 

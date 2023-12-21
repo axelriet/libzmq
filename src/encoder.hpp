@@ -93,14 +93,26 @@ template <typename T> class encoder_base_t : public i_encoder
             //  Copy data to the buffer. If the buffer is full, return.
             const size_t to_copy = std::min (_to_write, buffersize - pos);
             if (to_copy == 2) {
-                buffer[pos] = *_write_pos;
-                buffer[pos + 1] = *(_write_pos + 1);
+                unsigned char *p = buffer + pos;
+                if (unlikely (((intptr_t) p) & 1))
+                    _UNLIKELY
+                    {
+                        *(buffer + pos++) = *(_write_pos++);
+                        *(buffer + pos++) = *(_write_pos++);
+                    }
+                else {
+                    *(reinterpret_cast<uint16_t *> (p)) =
+                      *(reinterpret_cast<uint16_t *> (_write_pos));
+                    pos += 2;
+                    _write_pos += 2;
+                }
+                _to_write -= 2;
             } else {
                 memcpy (buffer + pos, _write_pos, to_copy);
+                _write_pos += to_copy;
+                pos += to_copy;
+                _to_write -= to_copy;
             }
-            pos += to_copy;
-            _write_pos += to_copy;
-            _to_write -= to_copy;
         }
 
         *data_ = buffer;

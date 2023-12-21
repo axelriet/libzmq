@@ -121,7 +121,10 @@ int zmq::stream_t::xsend (msg_t *msg_)
         }
         const bool ok = _current_out->write (msg_);
         if (likely (ok))
-            _current_out->flush ();
+            _LIKELY
+            {
+                _current_out->flush ();
+            }
         _current_out = NULL;
     } else {
         const int rc = msg_->close ();

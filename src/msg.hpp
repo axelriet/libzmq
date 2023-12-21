@@ -87,12 +87,12 @@ class msg_t
         shared = 128
     };
 
-    LIBZMQ_FORCEINLINE bool zmq::msg_t::check () const
+    LIBZMQ_FORCEINLINE bool check () const
     {
         return (_u.base.type >= type_min) && (_u.base.type <= type_max);
     }
 
-    LIBZMQ_FORCEINLINE void *zmq::msg_t::datap ()
+    LIBZMQ_FORCEINLINE void *datap ()
     {
 #ifndef NDEBUG
         //  Check the validity of the message.
@@ -117,7 +117,7 @@ class msg_t
         return NULL;
     }
 
-    LIBZMQ_FORCEINLINE size_t zmq::msg_t::sizep () const
+    LIBZMQ_FORCEINLINE size_t sizep () const
     {
 #ifndef NDEBUG
         //  Check the validity of the message.
@@ -142,7 +142,7 @@ class msg_t
         return 0;
     }
 
-    LIBZMQ_FORCEINLINE unsigned char zmq::msg_t::flagsp () const
+    LIBZMQ_FORCEINLINE unsigned char flagsp () const
     {
         return _u.base.flags;
     }
@@ -195,17 +195,17 @@ class msg_t
     void set_metadata (_In_ metadata_t *metadata_);
     void reset_metadata ();
 
-    bool zmq::msg_t::is_routing_id () const
+    bool is_routing_id () const
     {
         return (_u.base.flags & routing_id) == routing_id;
     }
 
-    bool zmq::msg_t::is_credential () const
+    bool is_credential () const
     {
         return (_u.base.flags & credential) == credential;
     }
 
-    bool zmq::msg_t::is_delimiter () const
+    bool is_delimiter () const
     {
         return _u.base.type == type_delimiter;
     }
@@ -245,12 +245,12 @@ class msg_t
         return (_u.base.flags & CMD_TYPE_MASK) == ping;
     }
 
-    bool zmq::msg_t::is_pong () const
+    bool is_pong () const
     {
         return (_u.base.flags & CMD_TYPE_MASK) == pong;
     }
 
-    bool zmq::msg_t::is_close_cmd () const
+    bool is_close_cmd () const
     {
         return (_u.base.flags & CMD_TYPE_MASK) == close_cmd;
     }
@@ -271,7 +271,7 @@ class msg_t
     size_t command_body_size () const;
     void *command_body ();
 
-    uint32_t zmq::msg_t::get_routing_id () const
+    uint32_t get_routing_id () const
     {
         return _u.base.routing_id;
     }
@@ -279,7 +279,7 @@ class msg_t
     int set_routing_id (uint32_t routing_id_);
     int reset_routing_id ();
 
-    _Ret_z_ const char *zmq::msg_t::group () const
+    _Ret_z_ const char *group () const
     {
         if (_u.base.group.type == group_type_long)
             return _u.base.group.lgroup.content->group;

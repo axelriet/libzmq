@@ -11,5 +11,11 @@
 #define unlikely(x) (x)
 #endif
 
+// C++20 [[likely]] and [[unlikely]] attributes
+
+#if !defined(_LIKELY) && !defined(_UNLIKELY)
+#define _LIKELY
+#define _UNLIKELY
+#endif
 
 #endif
