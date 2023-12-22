@@ -12,6 +12,8 @@ zmq::fd_t zmq::vsock_open_socket (const char *address_,
                                   const zmq::options_t &options_,
                                   zmq::vsock_address_t *out_vsock_addr_)
 {
+    LIBZMQ_UNUSED (options_);
+
     //
     //  Convert the textual address into address structure.
     //

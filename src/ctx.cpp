@@ -288,6 +288,10 @@ int zmq::ctx_t::set (int option_, const void *optval_, size_t optvallen_)
             }
             break;
 
+        case ZMQ_PREFERRED_MAX_GROUP_NAME_LENGTH:
+        case ZMQ_PREFERRED_MAX_SMALL_MESSAGE_SIZE:
+            break;
+
         default: {
             return thread_ctx_t::set (option_, optval_, optvallen_);
         }
@@ -352,7 +356,6 @@ int zmq::ctx_t::get (int option_, void *optval_, const size_t *optvallen_)
 
         case ZMQ_MSG_T_SIZE:
             if (is_int) {
-                scoped_lock_t locker (_opt_sync);
                 *value = sizeof (zmq_msg_t);
                 return 0;
             }
@@ -362,6 +365,20 @@ int zmq::ctx_t::get (int option_, void *optval_, const size_t *optvallen_)
             if (is_int) {
                 scoped_lock_t locker (_opt_sync);
                 *value = _zero_copy;
+                return 0;
+            }
+            break;
+
+        case ZMQ_PREFERRED_MAX_GROUP_NAME_LENGTH:
+            if (is_int) {
+                *value = sizeof (msg_t::group_t::sgroup.group) - 1;
+                return 0;
+            }
+            break;
+
+        case ZMQ_PREFERRED_MAX_SMALL_MESSAGE_SIZE:
+            if (is_int) {
+                *value = msg_t::max_vsm_size;
                 return 0;
             }
             break;

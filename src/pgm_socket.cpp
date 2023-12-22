@@ -34,9 +34,9 @@ zmq::pgm_socket_t::pgm_socket_t (bool receiver_, const options_t &options_) :
     pgm_msgv_processed (0)
 {
 #ifndef NDEBUG
-    pgm_min_log_level = PGM_LOG_LEVEL_DEBUG;
+    pgm_min_log_level = PGM_LOG_LEVEL_NORMAL;
 #else
-    pgm_min_log_level = PGM_LOG_LEVEL_ERROR;
+    pgm_min_log_level = PGM_LOG_LEVEL_WARNING;
 #endif
 }
 

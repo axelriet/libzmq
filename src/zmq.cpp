@@ -515,7 +515,6 @@ zmq_recvmsg (_In_ void *s_, _Inout_ zmq_msg_t *msg_, int flags_)
     return zmq_msg_recv (msg_, s_, flags_);
 }
 
-
 ZMQ_EXPORT_IMPL (int)
 zmq_recv (_In_ void *s_,
           _Out_writes_bytes_ (len_) void *buf_,

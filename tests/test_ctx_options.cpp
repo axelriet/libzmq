@@ -256,6 +256,25 @@ void test_ctx_option_blocky ()
     test_context_socket_close (router);
 }
 
+void test_ctx_option_preferred_sizes ()
+{
+    TEST_ASSERT_EQUAL_INT (
+      -1, zmq_ctx_set (get_test_context (),
+                       ZMQ_PREFERRED_MAX_SMALL_MESSAGE_SIZE, 0));
+
+    TEST_ASSERT_EQUAL_INT (-1, zmq_ctx_set (get_test_context (),
+                                            ZMQ_PREFERRED_MAX_GROUP_NAME_LENGTH,
+                                            0));
+
+    TEST_ASSERT_EQUAL_INT (
+      33,
+      zmq_ctx_get (get_test_context (), ZMQ_PREFERRED_MAX_SMALL_MESSAGE_SIZE));
+
+    TEST_ASSERT_EQUAL_INT (
+      14,
+      zmq_ctx_get (get_test_context (), ZMQ_PREFERRED_MAX_GROUP_NAME_LENGTH));
+}
+
 void test_ctx_option_invalid ()
 {
 #ifdef ZMQ_ACT_MILITANT
@@ -283,6 +302,7 @@ int ZMQ_CDECL main (void)
     RUN_TEST (test_ctx_thread_opts);
     RUN_TEST (test_ctx_zero_copy);
     RUN_TEST (test_ctx_option_blocky);
+    RUN_TEST (test_ctx_option_preferred_sizes);
     RUN_TEST (test_ctx_option_invalid);
     return UNITY_END ();
 }
