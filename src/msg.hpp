@@ -89,7 +89,7 @@ class msg_t
 
     LIBZMQ_FORCEINLINE bool check () const
     {
-        return (_u.base.type >= type_min) && (_u.base.type <= type_max);
+        return (_u.base.type - type_min) <= (type_max - type_min);
     }
 
     LIBZMQ_FORCEINLINE void *datap ()
@@ -253,6 +253,11 @@ class msg_t
     bool is_close_cmd () const
     {
         return (_u.base.flags & CMD_TYPE_MASK) == close_cmd;
+    }
+
+    bool has_metadata () const
+    {
+        return _u.base.metadata != NULL;
     }
 
     //  These are called on each message received by the session_base class,
