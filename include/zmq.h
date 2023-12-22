@@ -808,6 +808,8 @@ ZMQ_EXPORT_VOID zmq_threadclose (_In_ _Post_invalid_ void *thread_);
 
 /*  DRAFT Context options                                                     */
 #define ZMQ_ZERO_COPY_RECV 10
+#define ZMQ_PREFERRED_MAX_GROUP_NAME_LENGTH 11
+#define ZMQ_PREFERRED_MAX_SMALL_MESSAGE_SIZE 12
 
 /*  DRAFT Context methods.                                                    */
 ZMQ_EXPORT (int)

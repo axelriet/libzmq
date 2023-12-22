@@ -389,10 +389,12 @@ void zmq::stream_engine_base_t::restart_output ()
     if (unlikely (_io_error))
         return;
 
-    if (likely (_output_stopped)) {
-        set_pollout ();
-        _output_stopped = false;
-    }
+    if (likely (_output_stopped))
+        _LIKELY
+        {
+            set_pollout ();
+            _output_stopped = false;
+        }
 
     //  Speculative write: The assumption is that at the moment new message
     //  was sent by the user the socket is probably available for writing.

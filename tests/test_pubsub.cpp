@@ -11,9 +11,109 @@
 #pragma comment(lib, "iphlpapi.lib")
 #endif
 
+#if __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER > 1700
+#define CODEC_WORKOUT
+#endif
+
+#ifdef CODEC_WORKOUT
+#include <thread>
+#include <chrono>
+#endif
+
 #define PRIVATE_EXPERIMENT_MULTICAST "224.0.1.20"
 
 SETUP_TEARDOWN_TESTCONTEXT
+
+#ifdef CODEC_WORKOUT
+#include <thread>
+
+void sleep (int ms)
+{
+    std::this_thread::sleep_for (std::chrono::milliseconds (ms));
+}
+
+int memchk (_In_reads_bytes_ (_Size) void *_Src,
+            _In_ int _Val,
+            _In_ size_t _Size)
+{
+    const unsigned char v = (unsigned char) _Val;
+    const unsigned char *p = (unsigned char *) _Src;
+
+    for (int i = 0; i < _Size; i++) {
+        if (p[i] != v) {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+void test_encoder_decoder (void *publisher, void *subscriber)
+{
+    size_t size;
+    int retries = 5;
+    const int MAX_SIZE = 3000;
+    std::atomic<bool> started (false);
+
+    auto sender = std::thread ([publisher, &started] () {
+        //
+        // Send a bunch of messages of various sizes: N messages
+        // of size 0, (N-1) messages of size 1, etc. The message
+        // content is filled with LOBYTE(message size) so we can
+        // test the content integrity on the receiving side.
+        //
+
+        started = true;
+
+        for (int i = 0; i <= MAX_SIZE; i++) {
+            for (int j = 0; j <= (MAX_SIZE - i); j++) {
+                zmq_msg_t msg;
+                TEST_ASSERT_SUCCESS_ERRNO (zmq_msg_init_size (&msg, i));
+                memset (zmq_msg_data (&msg), (int) i, i);
+                TEST_ASSERT_SUCCESS_ERRNO (zmq_msg_send (&msg, publisher, 0));
+                TEST_ASSERT_SUCCESS_ERRNO (zmq_msg_close (&msg));
+            }
+        }
+    });
+
+    while (!started) {
+        sleep (100);
+    }
+
+    for (;;) {
+        zmq_msg_t msg;
+        TEST_ASSERT_SUCCESS_ERRNO (zmq_msg_init (&msg));
+        int rc = zmq_msg_recv (&msg, subscriber, ZMQ_DONTWAIT);
+
+        if (rc == -1) {
+            //
+            // Exit if we don't receive anything for .5s
+            //
+
+            if (zmq_errno () == EAGAIN) {
+                if (retries--) {
+                    sleep (100);
+                    continue;
+                }
+                break;
+            } else {
+                TEST_ASSERT_SUCCESS_ERRNO (-1);
+            }
+
+            retries = 5;
+        }
+
+        size = zmq_msg_size (&msg);
+        TEST_ASSERT_TRUE_MESSAGE (memchk (zmq_msg_data (&msg), (int) size, size)
+                                    == 0,
+                                  "Unexpected message content!");
+        TEST_ASSERT_SUCCESS_ERRNO (zmq_msg_close (&msg));
+    }
+
+    sender.join ();
+}
+
+#endif
 
 void test (const char *address)
 {
@@ -70,6 +170,10 @@ void test (const char *address)
     recv_string_expect_success (subscriber, "test1", 0);
     recv_string_expect_success (subscriber, "test2", 0);
     recv_string_expect_success (subscriber, "test3", 0);
+
+#ifdef CODEC_WORKOUT
+    test_encoder_decoder (publisher, subscriber);
+#endif
 
     //  Clean up.
     test_context_socket_close (publisher);

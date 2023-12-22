@@ -23,7 +23,18 @@ class v1_decoder_t ZMQ_FINAL : public decoder_base_t<v1_decoder_t>
     int flags_ready (unsigned char const *);
     int message_ready (unsigned char const *);
 
+#if defined(_MSC_VER)
+    __declspec (align (ZMQ_CACHELINE_SIZE)) unsigned char _tmpbuf[8];
+    unsigned char _padding[ZMQ_CACHELINE_SIZE - sizeof (_tmpbuf)];
+#elif defined(__GNUC__) || defined(__INTEL_COMPILER)                           \
+  || (defined(__SUNPRO_C) && __SUNPRO_C >= 0x590)                              \
+  || (defined(__SUNPRO_CC) && __SUNPRO_CC >= 0x590)
+    unsigned char _tmpbuf[8] __attribute__ ((aligned (ZMQ_CACHELINE_SIZE)));
+    unsigned char _padding[ZMQ_CACHELINE_SIZE - sizeof (_tmpbuf)];
+#else
     unsigned char _tmpbuf[8];
+#endif
+
     msg_t _in_progress;
 
     const int64_t _max_msg_size;

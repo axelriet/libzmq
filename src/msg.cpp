@@ -148,6 +148,9 @@ int zmq::msg_t::init ()
     _u.vsm.group.sgroup.group[0] = '\0';
     _u.vsm.group.type = group_type_short;
     _u.vsm.routing_id = 0;
+#ifndef NDEBUG
+    memset (_u.vsm.data, 0, sizeof (_u.vsm.data));
+#endif
     return 0;
 }
 
@@ -161,6 +164,9 @@ int zmq::msg_t::init_size (size_t size_)
         _u.vsm.group.sgroup.group[0] = '\0';
         _u.vsm.group.type = group_type_short;
         _u.vsm.routing_id = 0;
+#ifndef NDEBUG
+        memset (_u.vsm.data, 0, sizeof (_u.vsm.data));
+#endif
     } else {
         _u.lmsg.metadata = NULL;
         _u.lmsg.type = type_lmsg;
@@ -187,6 +193,10 @@ int zmq::msg_t::init_size (size_t size_)
             errno = ENOMEM;
             return -1;
         }
+
+#ifndef NDEBUG
+        memset (_u.lmsg.content, 0, sizeof (content_t) + size_);
+#endif
 
         _u.lmsg.content->data = _u.lmsg.content + 1;
         _u.lmsg.content->size = size_;
@@ -377,7 +387,7 @@ int zmq::msg_t::close ()
         return -1;
     }
 
-    if (_u.base.type == type_lmsg) {
+    if (is_lmsg()) {
         //  If the content is not shared, or if it is shared and the reference
         //  count has dropped to zero, deallocate it.
         if (!(_u.lmsg.flags & msg_t::shared)
@@ -399,6 +409,7 @@ int zmq::msg_t::close ()
             std::free (_u.lmsg.content);
 #endif
 #endif
+            _u.lmsg.content = NULL;
         }
     }
 
@@ -415,10 +426,18 @@ int zmq::msg_t::close ()
 
             _u.zclmsg.content->ffn (_u.zclmsg.content->data,
                                     _u.zclmsg.content->hint);
+            _u.zclmsg.content->data = NULL;
+            _u.zclmsg.content->hint = NULL;
         }
     }
 
-    if (_u.base.metadata != NULL) {
+#ifndef NDEBUG
+    if (is_vsm ()) {
+        memset (_u.vsm.data, 0, sizeof (_u.vsm.data));
+    }
+#endif
+
+    if (has_metadata()) {
         if (_u.base.metadata->drop_ref ()) {
             LIBZMQ_DELETE (_u.base.metadata);
         }
@@ -431,6 +450,7 @@ int zmq::msg_t::close ()
             //  counter so we call the destructor explicitly now.
             _u.base.group.lgroup.content->refcnt.~atomic_counter_t ();
             std::free (_u.base.group.lgroup.content);
+            _u.base.group.lgroup.content = NULL;
         }
     }
 
@@ -488,7 +508,7 @@ int zmq::msg_t::copy (msg_t &src_)
         }
     }
 
-    if (src_._u.base.metadata != NULL)
+    if (src_.has_metadata())
         src_._u.base.metadata->add_ref ();
 
     if (src_._u.base.group.type == group_type_long)
@@ -692,7 +712,7 @@ int zmq::msg_t::reset_routing_id ()
 
 int zmq::msg_t::set_group (_In_z_ const char *group_)
 {
-    size_t length = strnlen (group_, ZMQ_GROUP_MAX_LENGTH);
+    const size_t length = strnlen (group_, ZMQ_GROUP_MAX_LENGTH);
 
     return set_group (group_, length);
 }
@@ -706,7 +726,7 @@ int zmq::msg_t::set_group (_In_reads_ (length_) const char *group_,
         return -1;
     }
 
-    if (length_ > 14) {
+    if (length_ > (sizeof (group_t::sgroup.group) - 1)) {
         _u.base.group.lgroup.type = group_type_long;
         _u.base.group.lgroup.content =
           (long_group_t *) std::malloc (sizeof (long_group_t));

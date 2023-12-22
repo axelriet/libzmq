@@ -87,12 +87,12 @@ class msg_t
         shared = 128
     };
 
-    LIBZMQ_FORCEINLINE bool zmq::msg_t::check () const
+    LIBZMQ_FORCEINLINE bool check () const
     {
-        return (_u.base.type >= type_min) && (_u.base.type <= type_max);
+        return (_u.base.type - type_min) <= (type_max - type_min);
     }
 
-    LIBZMQ_FORCEINLINE void *zmq::msg_t::datap ()
+    LIBZMQ_FORCEINLINE void *datap ()
     {
 #ifndef NDEBUG
         //  Check the validity of the message.
@@ -117,7 +117,7 @@ class msg_t
         return NULL;
     }
 
-    LIBZMQ_FORCEINLINE size_t zmq::msg_t::sizep () const
+    LIBZMQ_FORCEINLINE size_t sizep () const
     {
 #ifndef NDEBUG
         //  Check the validity of the message.
@@ -142,7 +142,7 @@ class msg_t
         return 0;
     }
 
-    LIBZMQ_FORCEINLINE unsigned char zmq::msg_t::flagsp () const
+    LIBZMQ_FORCEINLINE unsigned char flagsp () const
     {
         return _u.base.flags;
     }
@@ -195,17 +195,17 @@ class msg_t
     void set_metadata (_In_ metadata_t *metadata_);
     void reset_metadata ();
 
-    bool zmq::msg_t::is_routing_id () const
+    bool is_routing_id () const
     {
         return (_u.base.flags & routing_id) == routing_id;
     }
 
-    bool zmq::msg_t::is_credential () const
+    bool is_credential () const
     {
         return (_u.base.flags & credential) == credential;
     }
 
-    bool zmq::msg_t::is_delimiter () const
+    bool is_delimiter () const
     {
         return _u.base.type == type_delimiter;
     }
@@ -245,14 +245,19 @@ class msg_t
         return (_u.base.flags & CMD_TYPE_MASK) == ping;
     }
 
-    bool zmq::msg_t::is_pong () const
+    bool is_pong () const
     {
         return (_u.base.flags & CMD_TYPE_MASK) == pong;
     }
 
-    bool zmq::msg_t::is_close_cmd () const
+    bool is_close_cmd () const
     {
         return (_u.base.flags & CMD_TYPE_MASK) == close_cmd;
+    }
+
+    bool has_metadata () const
+    {
+        return _u.base.metadata != NULL;
     }
 
     //  These are called on each message received by the session_base class,
@@ -271,7 +276,7 @@ class msg_t
     size_t command_body_size () const;
     void *command_body ();
 
-    uint32_t zmq::msg_t::get_routing_id () const
+    uint32_t get_routing_id () const
     {
         return _u.base.routing_id;
     }
@@ -279,7 +284,7 @@ class msg_t
     int set_routing_id (uint32_t routing_id_);
     int reset_routing_id ();
 
-    _Ret_z_ const char *zmq::msg_t::group () const
+    _Ret_z_ const char *group () const
     {
         if (_u.base.group.type == group_type_long)
             return _u.base.group.lgroup.content->group;
@@ -303,6 +308,30 @@ class msg_t
 
     void shrink (size_t new_size_);
 
+  public:
+    struct long_group_t
+    {
+        char group[ZMQ_GROUP_MAX_LENGTH + 1];
+        atomic_counter_t refcnt;
+    };
+
+    union group_t
+    {
+        unsigned char type;
+
+        struct
+        {
+            unsigned char type;
+            char group[15]; // This could be reduced to increase the VSM size
+        } sgroup;
+
+        struct
+        {
+            unsigned char type;
+            long_group_t *content;
+        } lgroup;
+    };
+
     //  Size in bytes of the largest message that is still copied around
     //  rather than being reference-counted.
 
@@ -314,7 +343,8 @@ class msg_t
     enum
     {
         max_vsm_size =
-          msg_t_size - (sizeof (metadata_t *) + 3 + 16 + sizeof (uint32_t))
+          msg_t_size
+          - (sizeof (metadata_t *) + 3 + sizeof (group_t) + sizeof (uint32_t))
     };
 
     enum
@@ -361,29 +391,6 @@ class msg_t
     {
         group_type_short,
         group_type_long
-    };
-
-    struct long_group_t
-    {
-        char group[ZMQ_GROUP_MAX_LENGTH + 1];
-        atomic_counter_t refcnt;
-    };
-
-    union group_t
-    {
-        unsigned char type;
-
-        struct
-        {
-            unsigned char type;
-            char group[15];
-        } sgroup;
-
-        struct
-        {
-            unsigned char type;
-            long_group_t *content;
-        } lgroup;
     };
 
     //  Note that fields shared between different message types are not

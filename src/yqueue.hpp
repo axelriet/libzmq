@@ -54,16 +54,28 @@ template <typename T, int N> class yqueue_t
     {
         while (true) {
             if (_begin_chunk == _end_chunk) {
+#if _MSC_VER
+                _aligned_free (_begin_chunk);
+#else
                 std::free (_begin_chunk);
+#endif
                 break;
             }
             chunk_t *o = _begin_chunk;
             _begin_chunk = _begin_chunk->next;
+#if _MSC_VER
+            _aligned_free (o);
+#else
             std::free (o);
+#endif
         }
 
         chunk_t *sc = _spare_chunk.xchg (NULL);
+#if _MSC_VER
+        _aligned_free (sc);
+#else
         std::free (sc);
+#endif
     }
 
     //  Returns reference to the front element of the queue.
@@ -122,7 +134,11 @@ template <typename T, int N> class yqueue_t
         else {
             _end_pos = N - 1;
             _end_chunk = _end_chunk->prev;
+#if _MSC_VER
+            _aligned_free (_end_chunk->next);
+#else
             std::free (_end_chunk->next);
+#endif
             _end_chunk->next = NULL;
         }
     }
@@ -140,7 +156,11 @@ template <typename T, int N> class yqueue_t
             //  so for cache reasons we'll get rid of the spare and
             //  use 'o' as the spare.
             chunk_t *cs = _spare_chunk.xchg (o);
+#if _MSC_VER
+            _aligned_free (cs);
+#else
             std::free (cs);
+#endif
         }
     }
 
@@ -161,7 +181,12 @@ template <typename T, int N> class yqueue_t
             return (chunk_t *) pv;
         return NULL;
 #else
+#if _MSC_VER
+        return static_cast<chunk_t *> (
+          _aligned_malloc (sizeof (chunk_t), ZMQ_CACHELINE_SIZE));
+#else
         return static_cast<chunk_t *> (std::malloc (sizeof (chunk_t)));
+#endif
 #endif
     }
 

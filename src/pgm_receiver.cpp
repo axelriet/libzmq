@@ -164,8 +164,10 @@ void zmq::pgm_receiver_t::in_event ()
         if (received == 0) {
             if (errno == ENOMEM || errno == EBUSY) {
                 const long timeout = pgm_socket.get_rx_timeout ();
-                add_timer (timeout, rx_timer_id);
-                has_rx_timer = true;
+                if (timeout > 0) {
+                    add_timer (timeout, rx_timer_id);
+                    has_rx_timer = true;
+                }
             }
             break;
         }

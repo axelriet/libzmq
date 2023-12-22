@@ -18,6 +18,11 @@ class socket_base_t;
 
 //  This structure defines the commands that can be sent between threads.
 
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4324) // structure was padded due to alignment specifier
+__declspec (align (ZMQ_CACHELINE_SIZE))
+#endif
 struct command_t
 {
     //  Object to process the command.
@@ -185,6 +190,7 @@ struct command_t
     } args;
 #ifdef _MSC_VER
 };
+#pragma warning(pop)
 #else
 }
 #ifdef HAVE_POSIX_MEMALIGN
@@ -193,5 +199,4 @@ __attribute__ ((aligned (ZMQ_CACHELINE_SIZE)))
 ;
 #endif
 }
-
 #endif

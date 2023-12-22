@@ -19,7 +19,17 @@ class v1_encoder_t ZMQ_FINAL : public encoder_base_t<v1_encoder_t>
     void size_ready ();
     void message_ready ();
 
-    unsigned char _tmpbuf[11]{};
+#if defined(_MSC_VER)
+    __declspec (align (ZMQ_CACHELINE_SIZE)) unsigned char _tmpbuf[11];
+    unsigned char _padding[ZMQ_CACHELINE_SIZE - sizeof (_tmpbuf)];
+#elif defined(__GNUC__) || defined(__INTEL_COMPILER)                           \
+  || (defined(__SUNPRO_C) && __SUNPRO_C >= 0x590)                              \
+  || (defined(__SUNPRO_CC) && __SUNPRO_CC >= 0x590)
+    unsigned char _tmpbuf[11] __attribute__ ((aligned (ZMQ_CACHELINE_SIZE)));
+    unsigned char _padding[ZMQ_CACHELINE_SIZE - sizeof (_tmpbuf)];
+#else
+    unsigned char _tmpbuf[11];
+#endif
 
     ZMQ_NON_COPYABLE_NOR_MOVABLE (v1_encoder_t)
 };
