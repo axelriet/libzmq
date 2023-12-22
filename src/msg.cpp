@@ -712,7 +712,7 @@ int zmq::msg_t::reset_routing_id ()
 
 int zmq::msg_t::set_group (_In_z_ const char *group_)
 {
-    size_t length = strnlen (group_, ZMQ_GROUP_MAX_LENGTH);
+    const size_t length = strnlen (group_, ZMQ_GROUP_MAX_LENGTH);
 
     return set_group (group_, length);
 }
@@ -726,7 +726,7 @@ int zmq::msg_t::set_group (_In_reads_ (length_) const char *group_,
         return -1;
     }
 
-    if (length_ > 14) {
+    if (length_ > (sizeof (group_t::sgroup.group) - 1)) {
         _u.base.group.lgroup.type = group_type_long;
         _u.base.group.lgroup.content =
           (long_group_t *) std::malloc (sizeof (long_group_t));

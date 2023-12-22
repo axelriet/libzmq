@@ -308,6 +308,30 @@ class msg_t
 
     void shrink (size_t new_size_);
 
+  public:
+    struct long_group_t
+    {
+        char group[ZMQ_GROUP_MAX_LENGTH + 1];
+        atomic_counter_t refcnt;
+    };
+
+    union group_t
+    {
+        unsigned char type;
+
+        struct
+        {
+            unsigned char type;
+            char group[15]; // This could be reduced to increase the VSM size
+        } sgroup;
+
+        struct
+        {
+            unsigned char type;
+            long_group_t *content;
+        } lgroup;
+    };
+
     //  Size in bytes of the largest message that is still copied around
     //  rather than being reference-counted.
 
@@ -319,7 +343,8 @@ class msg_t
     enum
     {
         max_vsm_size =
-          msg_t_size - (sizeof (metadata_t *) + 3 + 16 + sizeof (uint32_t))
+          msg_t_size
+          - (sizeof (metadata_t *) + 3 + sizeof (group_t) + sizeof (uint32_t))
     };
 
     enum
@@ -366,29 +391,6 @@ class msg_t
     {
         group_type_short,
         group_type_long
-    };
-
-    struct long_group_t
-    {
-        char group[ZMQ_GROUP_MAX_LENGTH + 1];
-        atomic_counter_t refcnt;
-    };
-
-    union group_t
-    {
-        unsigned char type;
-
-        struct
-        {
-            unsigned char type;
-            char group[15];
-        } sgroup;
-
-        struct
-        {
-            unsigned char type;
-            long_group_t *content;
-        } lgroup;
     };
 
     //  Note that fields shared between different message types are not
