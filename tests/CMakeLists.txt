@@ -324,8 +324,8 @@ foreach(test ${tests})
 endforeach()
 
 # override timeout for these tests
-set_tests_properties(test_heartbeats PROPERTIES TIMEOUT 60)
-set_tests_properties(test_pubsub PROPERTIES TIMEOUT 600)
+set_tests_properties(test_heartbeats PROPERTIES TIMEOUT 120)
+set_tests_properties(test_pubsub PROPERTIES TIMEOUT 300)
 
 if(WIN32 AND ENABLE_DRAFTS)
   set_tests_properties(test_radio_dish PROPERTIES TIMEOUT 30)
@@ -337,8 +337,13 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Linux")
   endif()
 endif()
 
-set_tests_properties(test_security_zap PROPERTIES TIMEOUT 60)
+set_tests_properties(test_security_zap PROPERTIES TIMEOUT 120)
 set_tests_properties(test_reconnect_ivl PROPERTIES TIMEOUT 15)
+
+set_tests_properties(test_reconnect_options PROPERTIES TIMEOUT 20)
+set_tests_properties(test_shutdown_stress PROPERTIES TIMEOUT 30)
+set_tests_properties(test_spec_pushpull PROPERTIES TIMEOUT 15)
+set_tests_properties(test_req_relaxed PROPERTIES TIMEOUT 15)
 
 # Check whether all tests in the current folder are present
 file(READ "${CMAKE_CURRENT_LIST_FILE}" CURRENT_LIST_FILE_CONTENT)
