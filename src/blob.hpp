@@ -11,6 +11,10 @@
 #include <algorithm>
 #include <ios>
 
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+#include <tbb/scalable_allocator.h>
+#endif
+
 #if __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER > 1700
 #define ZMQ_HAS_MOVE_SEMANTICS
 #define ZMQ_MAP_INSERT_OR_EMPLACE(k, v) emplace (k, v)
@@ -50,7 +54,11 @@ struct blob_t
 
     //  Creates a blob_t of a given size, with uninitialized content.
     explicit blob_t (const size_t size_) :
-        _data (static_cast<unsigned char *> (std::malloc (size_))),
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+        _data (static_cast<unsigned char *> (scalable_malloc (size_))),
+#else
+    _data (static_cast<unsigned char *> (std::malloc (size_))),
+#endif
         _size (size_),
         _owned (true)
     {
@@ -60,7 +68,11 @@ struct blob_t
     //  Creates a blob_t of a given size, an initializes content by copying
     // from another buffer.
     blob_t (const unsigned char *const data_, const size_t size_) :
-        _data (static_cast<unsigned char *> (std::malloc (size_))),
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+        _data (static_cast<unsigned char *> (scalable_malloc (size_))),
+#else
+    _data (static_cast<unsigned char *> (std::malloc (size_))),
+#endif
         _size (size_),
         _owned (true)
     {
@@ -100,7 +112,11 @@ struct blob_t
     void set_deep_copy (blob_t const &other_)
     {
         clear ();
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+        _data = static_cast<unsigned char *> (scalable_malloc (other_._size));
+#else
         _data = static_cast<unsigned char *> (std::malloc (other_._size));
+#endif
         alloc_assert (!other_._size || _data);
         _size = other_._size;
         _owned = true;
@@ -113,7 +129,11 @@ struct blob_t
     void set (const unsigned char *const data_, const size_t size_)
     {
         clear ();
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+        _data = static_cast<unsigned char *> (scalable_malloc (size_));
+#else
         _data = static_cast<unsigned char *> (std::malloc (size_));
+#endif
         alloc_assert (!size_ || _data);
         _size = size_;
         _owned = true;
@@ -126,7 +146,11 @@ struct blob_t
     void clear ()
     {
         if (_owned) {
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+            scalable_free (_data);
+#else
             std::free (_data);
+#endif
         }
         _data = 0;
         _size = 0;
@@ -135,7 +159,11 @@ struct blob_t
     ~blob_t ()
     {
         if (_owned) {
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+            scalable_free (_data);
+#else
             std::free (_data);
+#endif
         }
     }
 

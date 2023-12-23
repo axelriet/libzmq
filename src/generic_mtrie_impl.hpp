@@ -10,6 +10,10 @@
 #include <algorithm>
 #include <list>
 
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+#include <tbb/scalable_allocator.h>
+#endif
+
 #include "err.hpp"
 #include "macros.hpp"
 #include "generic_mtrie.hpp"
@@ -33,7 +37,11 @@ template <typename T> generic_mtrie_t<T>::~generic_mtrie_t ()
         for (unsigned short i = 0; i != _count; ++i) {
             LIBZMQ_DELETE (_next.table[i]);
         }
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+        scalable_free (_next.table);
+#else
         std::free (_next.table);
+#endif
     }
 }
 
@@ -57,7 +65,11 @@ bool generic_mtrie_t<T>::add (prefix_t prefix_, size_t size_, value_t *pipe_)
                 generic_mtrie_t *oldp = it->_next.node;
                 it->_count = (it->_min < c ? c - it->_min : it->_min - c) + 1;
                 it->_next.table = static_cast<generic_mtrie_t **> (
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+                  scalable_malloc (sizeof (generic_mtrie_t *) * it->_count));
+#else
                   std::malloc (sizeof (generic_mtrie_t *) * it->_count));
+#endif
                 alloc_assert (it->_next.table);
                 for (unsigned short i = 0; i != it->_count; ++i)
                     it->_next.table[i] = 0;
@@ -67,8 +79,15 @@ bool generic_mtrie_t<T>::add (prefix_t prefix_, size_t size_, value_t *pipe_)
                 //  The new character is above the current character range.
                 const unsigned short old_count = it->_count;
                 it->_count = c - it->_min + 1;
-                it->_next.table = static_cast<generic_mtrie_t **> (realloc (
-                  it->_next.table, sizeof (generic_mtrie_t *) * it->_count));
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+                it->_next.table =
+                  static_cast<generic_mtrie_t **> (scalable_realloc (
+                    it->_next.table, sizeof (generic_mtrie_t *) * it->_count));
+#else
+                it->_next.table =
+                  static_cast<generic_mtrie_t **> (std::realloc (
+                    it->_next.table, sizeof (generic_mtrie_t *) * it->_count));
+#endif
                 alloc_assert (it->_next.table);
                 for (unsigned short i = old_count; i != it->_count; i++)
                     it->_next.table[i] = NULL;
@@ -76,8 +95,15 @@ bool generic_mtrie_t<T>::add (prefix_t prefix_, size_t size_, value_t *pipe_)
                 //  The new character is below the current character range.
                 const unsigned short old_count = it->_count;
                 it->_count = (it->_min + old_count) - c;
-                it->_next.table = static_cast<generic_mtrie_t **> (realloc (
-                  it->_next.table, sizeof (generic_mtrie_t *) * it->_count));
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+                it->_next.table =
+                  static_cast<generic_mtrie_t **> (scalable_realloc (
+                    it->_next.table, sizeof (generic_mtrie_t *) * it->_count));
+#else
+                it->_next.table =
+                  static_cast<generic_mtrie_t **> (std::realloc (
+                    it->_next.table, sizeof (generic_mtrie_t *) * it->_count));
+#endif
                 alloc_assert (it->_next.table);
                 memmove (it->_next.table + it->_min - c, it->_next.table,
                          old_count * sizeof (generic_mtrie_t *));
@@ -170,7 +196,11 @@ void generic_mtrie_t<T>::rm (value_t *pipe_,
             if (it.size >= maxbuffsize) {
                 maxbuffsize = it.size + 256;
                 buff =
-                  static_cast<unsigned char *> (realloc (buff, maxbuffsize));
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+                  static_cast<unsigned char *> (scalable_realloc (buff, maxbuffsize));
+#else
+                  static_cast<unsigned char *> (std::realloc (buff, maxbuffsize));
+#endif
                 alloc_assert (buff);
             }
 
@@ -305,7 +335,11 @@ void generic_mtrie_t<T>::rm (value_t *pipe_,
                         //  Free the node table if it's no longer used.
                         switch (it.node->_live_nodes) {
                             case 0:
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+                                scalable_free (it.node->_next.table);
+#else
                                 std::free (it.node->_next.table);
+#endif
                                 it.node->_next.table = NULL;
                                 it.node->_count = 0;
                                 break;
@@ -324,7 +358,11 @@ void generic_mtrie_t<T>::rm (value_t *pipe_,
                                       it.node->_next
                                         .table[it.new_min - it.node->_min];
                                     zmq_assert (node);
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+                                    scalable_free (it.node->_next.table);
+#else
                                     std::free (it.node->_next.table);
+#endif
                                     it.node->_next.node = node;
                                 }
                                 it.node->_count = 1;
@@ -354,8 +392,14 @@ void generic_mtrie_t<T>::rm (value_t *pipe_,
                                       it.new_max - it.new_min + 1;
                                     it.node->_next.table =
                                       static_cast<generic_mtrie_t **> (
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+                                        scalable_malloc (
+                                          sizeof (generic_mtrie_t *)
+                                          * it.node->_count));
+#else
                                         std::malloc (sizeof (generic_mtrie_t *)
                                                      * it.node->_count));
+#endif
                                     alloc_assert (it.node->_next.table);
 
                                     memmove (it.node->_next.table,
@@ -363,8 +407,11 @@ void generic_mtrie_t<T>::rm (value_t *pipe_,
                                                + (it.new_min - it.node->_min),
                                              sizeof (generic_mtrie_t *)
                                                * it.node->_count);
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+                                    scalable_free (old_table);
+#else
                                     std::free (old_table);
-
+#endif
                                     it.node->_min = it.new_min;
                                 }
                         }
@@ -373,7 +420,11 @@ void generic_mtrie_t<T>::rm (value_t *pipe_,
         }
     }
 
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+    scalable_free (buff);
+#else
     std::free (buff);
+#endif
 }
 
 template <typename T>
@@ -469,7 +520,11 @@ generic_mtrie_t<T>::rm (prefix_t prefix_, size_t size_, value_t *pipe_)
                         it.node->_min += (unsigned char) i;
                         it.node->_count = 1;
                         generic_mtrie_t *oldp = it.node->_next.table[i];
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+                        scalable_free (it.node->_next.table);
+#else
                         std::free (it.node->_next.table);
+#endif
                         it.node->_next.table = NULL;
                         it.node->_next.node = oldp;
                     } else if (it.current_child == it.node->_min) {
@@ -484,12 +539,21 @@ generic_mtrie_t<T>::rm (prefix_t prefix_, size_t size_, value_t *pipe_)
                         it.node->_count -= i;
                         generic_mtrie_t **old_table = it.node->_next.table;
                         it.node->_next.table =
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+                          static_cast<generic_mtrie_t **> (scalable_malloc (
+                            sizeof (generic_mtrie_t *) * it.node->_count));
+#else
                           static_cast<generic_mtrie_t **> (std::malloc (
                             sizeof (generic_mtrie_t *) * it.node->_count));
+#endif
                         alloc_assert (it.node->_next.table);
                         memmove (it.node->_next.table, old_table + i,
                                  sizeof (generic_mtrie_t *) * it.node->_count);
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+                        scalable_free (old_table);
+#else
                         std::free (old_table);
+#endif
                     } else if (it.current_child
                                == it.node->_min + it.node->_count - 1) {
                         //  We can compact the table "from the right"
@@ -502,12 +566,21 @@ generic_mtrie_t<T>::rm (prefix_t prefix_, size_t size_, value_t *pipe_)
                         it.node->_count -= i;
                         generic_mtrie_t **old_table = it.node->_next.table;
                         it.node->_next.table =
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+                          static_cast<generic_mtrie_t **> (scalable_malloc (
+                            sizeof (generic_mtrie_t *) * it.node->_count));
+#else
                           static_cast<generic_mtrie_t **> (std::malloc (
                             sizeof (generic_mtrie_t *) * it.node->_count));
+#endif
                         alloc_assert (it.node->_next.table);
                         memmove (it.node->_next.table, old_table,
                                  sizeof (generic_mtrie_t *) * it.node->_count);
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+                        scalable_free (old_table);
+#else
                         std::free (old_table);
+#endif
                     }
                 }
             }

@@ -10,6 +10,10 @@
 #include "atomic_ptr.hpp"
 #include "platform.hpp"
 
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+#include <tbb/scalable_allocator.h>
+#endif
+
 namespace zmq
 {
 //  yqueue is an efficient queue implementation. The main goal is
@@ -54,27 +58,39 @@ template <typename T, int N> class yqueue_t
     {
         while (true) {
             if (_begin_chunk == _end_chunk) {
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+                scalable_aligned_free (_begin_chunk);
+#else
 #if _MSC_VER
                 _aligned_free (_begin_chunk);
 #else
                 std::free (_begin_chunk);
 #endif
+#endif
                 break;
             }
             chunk_t *o = _begin_chunk;
             _begin_chunk = _begin_chunk->next;
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+            scalable_aligned_free (o);
+#else
 #if _MSC_VER
             _aligned_free (o);
 #else
             std::free (o);
 #endif
+#endif
         }
 
         chunk_t *sc = _spare_chunk.xchg (NULL);
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+        scalable_aligned_free (sc);
+#else
 #if _MSC_VER
         _aligned_free (sc);
 #else
         std::free (sc);
+#endif
 #endif
     }
 
@@ -134,10 +150,14 @@ template <typename T, int N> class yqueue_t
         else {
             _end_pos = N - 1;
             _end_chunk = _end_chunk->prev;
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+            scalable_aligned_free (_end_chunk->next);
+#else
 #if _MSC_VER
             _aligned_free (_end_chunk->next);
 #else
             std::free (_end_chunk->next);
+#endif
 #endif
             _end_chunk->next = NULL;
         }
@@ -156,10 +176,14 @@ template <typename T, int N> class yqueue_t
             //  so for cache reasons we'll get rid of the spare and
             //  use 'o' as the spare.
             chunk_t *cs = _spare_chunk.xchg (o);
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+            scalable_aligned_free (cs);
+#else
 #if _MSC_VER
             _aligned_free (cs);
 #else
             std::free (cs);
+#endif
 #endif
         }
     }
@@ -181,11 +205,16 @@ template <typename T, int N> class yqueue_t
             return (chunk_t *) pv;
         return NULL;
 #else
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+        return static_cast<chunk_t *> (
+          scalable_aligned_malloc (sizeof (chunk_t), ZMQ_CACHELINE_SIZE));
+#else
 #if _MSC_VER
         return static_cast<chunk_t *> (
           _aligned_malloc (sizeof (chunk_t), ZMQ_CACHELINE_SIZE));
 #else
         return static_cast<chunk_t *> (std::malloc (sizeof (chunk_t)));
+#endif
 #endif
 #endif
     }

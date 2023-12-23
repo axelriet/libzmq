@@ -7,6 +7,10 @@
 #include "config.hpp"
 #include "address.hpp"
 
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+#include <tbb/scalable_allocator.h>
+#endif
+
 #if !defined ZMQ_HAVE_WINDOWS
 #include <fcntl.h>
 #include <sys/types.h>
@@ -467,7 +471,11 @@ static int make_fdpair_tcpip (zmq::fd_t *r_, zmq::fd_t *w_)
         const size_t dummy_size =
           1024 * 1024; //  1M to overload default receive buffer
         unsigned char *dummy =
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+          static_cast<unsigned char *> (scalable_malloc (dummy_size));
+#else
           static_cast<unsigned char *> (std::malloc (dummy_size));
+#endif
         wsa_assert (dummy);
 
         int still_to_send = static_cast<int> (dummy_size);
@@ -489,7 +497,11 @@ static int make_fdpair_tcpip (zmq::fd_t *r_, zmq::fd_t *w_)
             wsa_assert (nbytes != SOCKET_ERROR);
             still_to_recv -= nbytes;
         }
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+        scalable_free (dummy);
+#else
         std::free (dummy);
+#endif
     }
 
     //  Save errno if error occurred in bind/listen/connect/accept.

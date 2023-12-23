@@ -10,6 +10,10 @@
 #include <new>
 #include <algorithm>
 
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+#include <tbb/scalable_allocator.h>
+#endif
+
 zmq::trie_t::trie_t () : _refcnt (0), _min (0), _count (0), _live_nodes (0)
 {
 }
@@ -23,7 +27,11 @@ zmq::trie_t::~trie_t ()
         for (unsigned short i = 0; i != _count; ++i) {
             LIBZMQ_DELETE (_next.table[i]);
         }
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+        scalable_free (_next.table);
+#else
         std::free (_next.table);
+#endif
     }
 }
 
@@ -48,7 +56,12 @@ bool zmq::trie_t::add (unsigned char *prefix_, size_t size_)
             trie_t *oldp = _next.node;
             _count = (_min < c ? c - _min : _min - c) + 1;
             _next.table =
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+              static_cast<trie_t **> (
+                scalable_malloc (sizeof (trie_t *) * _count));
+#else
               static_cast<trie_t **> (std::malloc (sizeof (trie_t *) * _count));
+#endif
             alloc_assert (_next.table);
             for (unsigned short i = 0; i != _count; ++i)
                 _next.table[i] = 0;
@@ -59,7 +72,11 @@ bool zmq::trie_t::add (unsigned char *prefix_, size_t size_)
             const unsigned short old_count = _count;
             _count = c - _min + 1;
             _next.table = static_cast<trie_t **> (
-              realloc (_next.table, sizeof (trie_t *) * _count));
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+              scalable_realloc (_next.table, sizeof (trie_t *) * _count));
+#else
+              std::realloc (_next.table, sizeof (trie_t *) * _count));
+#endif
             zmq_assert (_next.table);
             for (unsigned short i = old_count; i != _count; i++)
                 _next.table[i] = NULL;
@@ -68,7 +85,11 @@ bool zmq::trie_t::add (unsigned char *prefix_, size_t size_)
             const unsigned short old_count = _count;
             _count = (_min + old_count) - c;
             _next.table = static_cast<trie_t **> (
-              realloc (_next.table, sizeof (trie_t *) * _count));
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+              scalable_realloc (_next.table, sizeof (trie_t *) * _count));
+#else
+              std::realloc (_next.table, sizeof (trie_t *) * _count));
+#endif
             zmq_assert (_next.table);
             memmove (_next.table + _min - c, _next.table,
                      old_count * sizeof (trie_t *));
@@ -152,7 +173,11 @@ bool zmq::trie_t::rm (unsigned char *prefix_, size_t size_)
                     node = _next.table[0];
                 }
                 zmq_assert (node);
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+                scalable_free (_next.table);
+#else
                 std::free (_next.table);
+#endif
                 _next.node = node;
                 _count = 1;
             } else if (c == _min) {
@@ -174,13 +199,20 @@ bool zmq::trie_t::rm (unsigned char *prefix_, size_t size_)
 
                 _count = _count - (new_min - _min);
                 _next.table = static_cast<trie_t **> (
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+                  scalable_malloc (sizeof (trie_t *) * _count));
+#else
                   std::malloc (sizeof (trie_t *) * _count));
+#endif
                 alloc_assert (_next.table);
 
                 memmove (_next.table, old_table + (new_min - _min),
                          sizeof (trie_t *) * _count);
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+                scalable_free (old_table);
+#else
                 std::free (old_table);
-
+#endif
                 _min = new_min;
             } else if (c == _min + _count - 1) {
                 //  We can compact the table "from the right".
@@ -198,11 +230,19 @@ bool zmq::trie_t::rm (unsigned char *prefix_, size_t size_)
 
                 trie_t **old_table = _next.table;
                 _next.table = static_cast<trie_t **> (
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+                  scalable_malloc (sizeof (trie_t *) * _count));
+#else
                   std::malloc (sizeof (trie_t *) * _count));
+#endif
                 alloc_assert (_next.table);
 
                 memmove (_next.table, old_table, sizeof (trie_t *) * _count);
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+                scalable_free (old_table);
+#else
                 std::free (old_table);
+#endif
             }
         }
     }
@@ -247,7 +287,11 @@ void zmq::trie_t::apply (
 {
     unsigned char *buff = NULL;
     apply_helper (&buff, 0, 0, func_, arg_);
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+    scalable_free (buff);
+#else
     std::free (buff);
+#endif
 }
 
 void zmq::trie_t::apply_helper (unsigned char **buff_,
@@ -265,7 +309,11 @@ void zmq::trie_t::apply_helper (unsigned char **buff_,
     //  Adjust the buffer.
     if (buffsize_ >= maxbuffsize_) {
         maxbuffsize_ = buffsize_ + 256;
-        *buff_ = static_cast<unsigned char *> (realloc (*buff_, maxbuffsize_));
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+        *buff_ = static_cast<unsigned char *> (scalable_realloc (*buff_, maxbuffsize_));
+#else
+        *buff_ = static_cast<unsigned char *> (std::realloc (*buff_, maxbuffsize_));
+#endif
         zmq_assert (*buff_);
     }
 

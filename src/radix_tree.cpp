@@ -10,6 +10,10 @@
 #include <iterator>
 #include <vector>
 
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+#include <tbb/scalable_allocator.h>
+#endif
+
 node_t::node_t (unsigned char *data_) : _data (data_)
 {
 }
@@ -131,7 +135,11 @@ void node_t::resize (size_t prefix_length_, size_t edgecount_)
     const size_t node_size = 3 * sizeof (uint32_t) + prefix_length_
                              + edgecount_ * (1 + sizeof (void *));
     unsigned char *new_data =
-      static_cast<unsigned char *> (realloc (_data, node_size));
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+      static_cast<unsigned char *> (scalable_realloc (_data, node_size));
+#else
+      static_cast<unsigned char *> (std::realloc (_data, node_size));
+#endif
     zmq_assert (new_data);
     _data = new_data;
     set_prefix_length (static_cast<uint32_t> (prefix_length_));
@@ -144,7 +152,11 @@ node_t make_node (size_t refcount_, size_t prefix_length_, size_t edgecount_)
                              + edgecount_ * (1 + sizeof (void *));
 
     unsigned char *data =
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+      static_cast<unsigned char *> (scalable_malloc (node_size));
+#else
       static_cast<unsigned char *> (std::malloc (node_size));
+#endif
     zmq_assert (data);
 
     node_t node (data);
@@ -164,7 +176,12 @@ static void free_nodes (node_t node_)
 {
     for (size_t i = 0, count = node_.edgecount (); i < count; ++i)
         free_nodes (node_.node_at (i));
+
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+    scalable_free (node_._data);
+#else
     std::free (node_._data);
+#endif
 }
 
 zmq::radix_tree_t::~radix_tree_t ()
@@ -433,7 +450,11 @@ bool zmq::radix_tree_t::rm (const unsigned char *key_, size_t key_size_)
         current_node.set_node_pointers (child.node_pointers ());
         current_node.set_refcount (child.refcount ());
 
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+        scalable_free (child._data);
+#else
         std::free (child._data);
+#endif
         parent_node.set_node_at (edge_index, current_node);
         return true;
     }
@@ -463,8 +484,13 @@ bool zmq::radix_tree_t::rm (const unsigned char *key_, size_t key_size_)
         parent_node.set_node_pointers (other_child.node_pointers ());
         parent_node.set_refcount (other_child.refcount ());
 
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+        scalable_free (current_node._data);
+        scalable_free (other_child._data);
+#else
         std::free (current_node._data);
         std::free (other_child._data);
+#endif
         grandparent_node.set_node_at (parent_edge_index, parent_node);
         return true;
     }
@@ -494,7 +520,11 @@ bool zmq::radix_tree_t::rm (const unsigned char *key_, size_t key_size_)
                         parent_node.edgecount () - 1);
 
     // Nothing points to this node now, so we can reclaim it.
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+    scalable_free (current_node._data);
+#else
     std::free (current_node._data);
+#endif
 
     if (parent_node.prefix_length () == 0)
         _root._data = parent_node._data;
