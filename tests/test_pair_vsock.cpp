@@ -9,20 +9,15 @@
 
 SETUP_TEARDOWN_TESTCONTEXT
 
-void test_pair_vmci ()
+void test_pair_vsock ()
 {
-    unsigned int cid = VMCISock_GetLocalCID ();
-    if (cid == VMADDR_CID_ANY)
-        TEST_IGNORE_MESSAGE ("VMCI environment unavailable, skipping test");
-    std::stringstream s;
-    s << "vmci://" << cid << ":" << 5560;
-    std::string endpoint = s.str ();
+    std::string endpoint = "vsock://localhost:5571";
 
     void *sb = test_context_socket (ZMQ_PAIR);
     int rc = zmq_bind (sb, endpoint.c_str ());
     if (rc < 0 && (errno == EAFNOSUPPORT || errno == EPROTONOSUPPORT)) {
         test_context_socket_close_zero_linger (sb);
-        TEST_IGNORE_MESSAGE ("VMCI not supported");
+        TEST_IGNORE_MESSAGE ("VSOCK not supported");
     }
     TEST_ASSERT_SUCCESS_ERRNO (rc);
 
@@ -40,6 +35,6 @@ int ZMQ_CDECL main (void)
     setup_test_environment ();
 
     UNITY_BEGIN ();
-    RUN_TEST (test_pair_vmci);
+    RUN_TEST (test_pair_vsock);
     return UNITY_END ();
 }

@@ -1074,6 +1074,23 @@ tests_test_reqrep_vmci_CXXFLAGS = @LIBZMQ_VMCI_CXXFLAGS@
 
 endif
 
+if HAVE_HVSOCKET
+test_apps += tests/test_pair_hvsocket tests/test_reqrep_hvsocket
+
+tests_test_pair_hvsocket_SOURCES = tests/test_pair_hvsocket.cpp
+tests_test_pair_hvsocket_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
+tests_test_pair_hvsocket_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
+tests_test_pair_hvsocket_LDFLAGS = @LIBZMQ_hvsocket_LDFLAGS@
+tests_test_pair_hvsocket_CXXFLAGS = @LIBZMQ_hvsocket_CXXFLAGS@
+
+tests_test_reqrep_hvsocket_SOURCES = tests/test_reqrep_hvsocket.cpp
+tests_test_reqrep_hvsocket_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
+tests_test_reqrep_hvsocket_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
+tests_test_reqrep_hvsocket_LDFLAGS = @LIBZMQ_hvsocket_LDFLAGS@
+tests_test_reqrep_hvsocket_CXXFLAGS = @LIBZMQ_hvsocket_CXXFLAGS@
+
+endif
+
 if HAVE_VSOCK
 test_apps += tests/test_pair_vsock tests/test_reqrep_vsock
 

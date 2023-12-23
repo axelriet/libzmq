@@ -374,6 +374,11 @@ void test_tcp ()
     test ("tcp://localhost:6213");
 }
 
+void test_udp ()
+{
+    test ("udp://localhost:6214");
+}
+
 void test_ipc ()
 {
 #if defined ZMQ_HAVE_IPC
@@ -386,7 +391,7 @@ void test_ipc ()
 void test_ws ()
 {
 #if defined ZMQ_HAVE_WS
-    test ("ws://localhost:6214");
+    test ("ws://localhost:6215");
 #else
     TEST_IGNORE_MESSAGE ("libzmq without WebSockets, ignoring test.");
 #endif
@@ -395,7 +400,7 @@ void test_ws ()
 void test_wss ()
 {
 #if defined ZMQ_HAVE_WSS
-    test ("wss://localhost:6215");
+    test ("wss://localhost:6216");
 #else
     TEST_IGNORE_MESSAGE ("libzmq without WSS WebSockets, ignoring test.");
 #endif
@@ -490,6 +495,7 @@ int ZMQ_CDECL main ()
 
     RUN_TEST (test_inproc);
     RUN_TEST (test_tcp);
+    RUN_TEST (test_udp);
 
     RUN_TEST (test_ipc);
 

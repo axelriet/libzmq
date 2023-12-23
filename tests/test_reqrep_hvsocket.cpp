@@ -9,24 +9,19 @@
 
 SETUP_TEARDOWN_TESTCONTEXT
 
-void test_pair_vmci ()
+void test_reqrep_hvsocket ()
 {
-    unsigned int cid = VMCISock_GetLocalCID ();
-    if (cid == VMADDR_CID_ANY)
-        TEST_IGNORE_MESSAGE ("VMCI environment unavailable, skipping test");
-    std::stringstream s;
-    s << "vmci://" << cid << ":" << 5560;
-    std::string endpoint = s.str ();
+    std::string endpoint = "hyperv://localhost:5580";
 
-    void *sb = test_context_socket (ZMQ_PAIR);
+    void *sb = test_context_socket (ZMQ_DEALER);
     int rc = zmq_bind (sb, endpoint.c_str ());
     if (rc < 0 && (errno == EAFNOSUPPORT || errno == EPROTONOSUPPORT)) {
         test_context_socket_close_zero_linger (sb);
-        TEST_IGNORE_MESSAGE ("VMCI not supported");
+        TEST_IGNORE_MESSAGE ("HVSOCKET not supported");
     }
     TEST_ASSERT_SUCCESS_ERRNO (rc);
 
-    void *sc = test_context_socket (ZMQ_PAIR);
+    void *sc = test_context_socket (ZMQ_DEALER);
     TEST_ASSERT_SUCCESS_ERRNO (zmq_connect (sc, endpoint.c_str ()));
 
     bounce (sb, sc);
@@ -40,6 +35,6 @@ int ZMQ_CDECL main (void)
     setup_test_environment ();
 
     UNITY_BEGIN ();
-    RUN_TEST (test_pair_vmci);
+    RUN_TEST (test_reqrep_hvsocket);
     return UNITY_END ();
 }
