@@ -62,6 +62,15 @@ zmq::ctx_t::ctx_t () :
     _ipv6 (false),
     _zero_copy (true)
 {
+#ifdef _MSC_VER
+#ifndef NDEBUG
+    int debug = _CrtSetDbgFlag (_CRTDBG_REPORT_FLAG);
+    debug |= _CRTDBG_ALLOC_MEM_DF;
+    debug |= _CRTDBG_CHECK_EVERY_16_DF;
+    _CrtSetDbgFlag (debug);
+#endif
+#endif
+
 #ifdef HAVE_FORK
     _pid = getpid ();
 #endif
