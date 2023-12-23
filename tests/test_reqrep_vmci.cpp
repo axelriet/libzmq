@@ -20,8 +20,10 @@ void test_reqrep_vmci ()
 
     void *sb = test_context_socket (ZMQ_DEALER);
     int rc = zmq_bind (sb, endpoint.c_str ());
-    if (rc < 0 && (errno == EAFNOSUPPORT || errno == EPROTONOSUPPORT))
+    if (rc < 0 && (errno == EAFNOSUPPORT || errno == EPROTONOSUPPORT)) {
+        test_context_socket_close_zero_linger (sb);
         TEST_IGNORE_MESSAGE ("VMCI not supported");
+    }
     TEST_ASSERT_SUCCESS_ERRNO (rc);
 
     void *sc = test_context_socket (ZMQ_DEALER);

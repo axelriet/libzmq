@@ -153,6 +153,14 @@ if(WITH_VMCI)
   list(APPEND tests test_pair_vmci test_reqrep_vmci)
 endif()
 
+if(WITH_VSOCK)
+  list(APPEND tests test_pair_vsock test_reqrep_vsock)
+endif()
+
+if(WITH_HVSOCKET)
+  list(APPEND tests test_pair_hvsocket test_reqrep_hvsocket)
+endif()
+
 if(ENABLE_DRAFTS)
   list(
     APPEND
@@ -317,6 +325,7 @@ endforeach()
 
 # override timeout for these tests
 set_tests_properties(test_heartbeats PROPERTIES TIMEOUT 60)
+set_tests_properties(test_pubsub PROPERTIES TIMEOUT 180)
 
 if(WIN32 AND ENABLE_DRAFTS)
   set_tests_properties(test_radio_dish PROPERTIES TIMEOUT 30)
