@@ -26,6 +26,9 @@ void zmq::poller_base_t::adjust_load (int amount_)
 
 void zmq::poller_base_t::add_timer (int timeout_, i_poll_events *sink_, int id_)
 {
+#ifndef NDEBUG
+    zmq_assert (timeout_ > 0);
+#endif
     uint64_t expiration = _clock.now_ms () + timeout_;
     timer_info_t info = {sink_, id_};
     _timers.insert (timers_t::value_type (expiration, info));
@@ -45,10 +48,11 @@ void zmq::poller_base_t::cancel_timer (i_poll_events *sink_, int id_)
     //  an already expired or canceled timer (or even worse - on a timer which
     //  never existed, supplying bad sink_ and/or id_ values) does not make any
     //  sense.
-    //  But in some edge cases this might happen. As described in issue #3645
-    //  `timer_event ()` call from `execute_timers ()` might call `cancel_timer ()`
-    //  on already canceled (deleted) timer.
-    //  As soon as that is resolved an 'assert (false)' should be put here.
+    //  
+    //  https://github.com/zeromq/libzmq/pull/3925 fixed a bug where we could
+    //  nevertheess get there as described in issue #3645. 
+
+    zmq_abort ("Invalid timer being cancelled?");
 }
 
 uint64_t zmq::poller_base_t::execute_timers ()
