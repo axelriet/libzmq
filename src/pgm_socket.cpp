@@ -223,7 +223,12 @@ int zmq::pgm_socket_t::init (bool udp_encapsulation_, const char *network_)
                                 &nak_ncf_retries, sizeof (nak_ncf_retries)))
             goto err_abort;
     } else {
-        const int send_only = 1, max_rte = (int) ((options.rate * 1000.0) / 8) /* B/s */,
+        //
+        // Rate in kbps must be converted to B/sec. Options.rate MUST be <= 17179869
+        // in order to fit in a 32-bit integer: 17,179,869 * 1000 / 8 = 2,147,483,625
+        //
+
+        const int send_only = 1, max_rte = (int) ((options.rate * 1000.0) / 8),
                   txw_max_tpdu = (int) options.multicast_maxtpdu,
                   txw_sqns = compute_sqns (txw_max_tpdu),
                   ambient_spm = pgm_secs (30),
