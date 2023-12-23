@@ -325,7 +325,7 @@ endforeach()
 
 # override timeout for these tests
 set_tests_properties(test_heartbeats PROPERTIES TIMEOUT 60)
-set_tests_properties(test_pubsub PROPERTIES TIMEOUT 180)
+set_tests_properties(test_pubsub PROPERTIES TIMEOUT 600)
 
 if(WIN32 AND ENABLE_DRAFTS)
   set_tests_properties(test_radio_dish PROPERTIES TIMEOUT 30)

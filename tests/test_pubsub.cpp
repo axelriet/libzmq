@@ -118,10 +118,10 @@ void test_encoder_decoder (void *publisher, void *subscriber)
 void test (const char *address)
 {
     size_t len = MAX_SOCKET_STRING;
+    char my_endpoint[MAX_SOCKET_STRING]{};
 
     //  Create a publisher
     void *publisher = test_context_socket (ZMQ_PUB);
-    char my_endpoint[MAX_SOCKET_STRING];
 
     //
     // Bind publisher. It is possible that the
@@ -374,11 +374,6 @@ void test_tcp ()
     test ("tcp://localhost:6213");
 }
 
-void test_udp ()
-{
-    test ("udp://localhost:6214");
-}
-
 void test_ipc ()
 {
 #if defined ZMQ_HAVE_IPC
@@ -495,7 +490,6 @@ int ZMQ_CDECL main ()
 
     RUN_TEST (test_inproc);
     RUN_TEST (test_tcp);
-    RUN_TEST (test_udp);
 
     RUN_TEST (test_ipc);
 

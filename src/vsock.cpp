@@ -18,7 +18,7 @@ zmq::fd_t zmq::vsock_open_socket (const char *address_,
     //  Convert the textual address into address structure.
     //
 
-    int rc = out_vsock_addr_->resolve (address_);
+    const int rc = out_vsock_addr_->resolve (address_);
 
     if (rc != 0) {
         return retired_fd;
@@ -28,7 +28,7 @@ zmq::fd_t zmq::vsock_open_socket (const char *address_,
     //  Create the socket.
     //
 
-    fd_t s = open_socket (out_vsock_addr_->family (), SOCK_STREAM, 0);
+    const fd_t s = open_socket (out_vsock_addr_->family (), SOCK_STREAM, 0);
 
     if (s == retired_fd) {
         return retired_fd;

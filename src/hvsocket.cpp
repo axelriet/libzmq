@@ -33,7 +33,7 @@ zmq::hvsocket_open_socket (const char *address_,
     //  Create the socket.
     //
 
-    fd_t s =
+    const fd_t s =
       open_socket (out_hvsocket_addr_->family (), SOCK_STREAM, HV_PROTOCOL_RAW);
 
     if (s == retired_fd) {
