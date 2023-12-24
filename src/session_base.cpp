@@ -693,7 +693,7 @@ void zmq::session_base_t::start_connecting (bool wait_)
             recv = true;
         }
 
-        int rc = engine->init (_addr, send, recv);
+        const int rc = engine->init (_addr, send, recv);
         errno_assert (rc == 0);
 
         send_attach (this, engine);
@@ -702,14 +702,14 @@ void zmq::session_base_t::start_connecting (bool wait_)
     }
 
 #ifdef ZMQ_HAVE_OPENPGM
-
     //  Both PGM and EPGM transports are using the same infrastructure.
-    if (_addr->protocol == "pgm" || _addr->protocol == "epgm") {
+    if (_addr->protocol == protocol_name::pgm
+        || _addr->protocol == protocol_name::epgm) {
         zmq_assert (options.type == ZMQ_PUB || options.type == ZMQ_XPUB
                     || options.type == ZMQ_SUB || options.type == ZMQ_XSUB);
 
         //  For EPGM transport with UDP encapsulation of PGM is used.
-        bool const udp_encapsulation = _addr->protocol == "epgm";
+        bool const udp_encapsulation = (_addr->protocol == protocol_name::epgm);
 
         //  At this point we'll create message pipes to the session straight
         //  away. There's no point in delaying it as no concept of 'connect'
@@ -720,7 +720,7 @@ void zmq::session_base_t::start_connecting (bool wait_)
               new (std::nothrow) pgm_sender_t (io_thread, options);
             alloc_assert (pgm_sender);
 
-            int rc =
+            const int rc =
               pgm_sender->init (udp_encapsulation, _addr->address.c_str ());
             errno_assert (rc == 0);
 
@@ -731,7 +731,7 @@ void zmq::session_base_t::start_connecting (bool wait_)
               new (std::nothrow) pgm_receiver_t (io_thread, options);
             alloc_assert (pgm_receiver);
 
-            int rc =
+            const int rc =
               pgm_receiver->init (udp_encapsulation, _addr->address.c_str ());
             errno_assert (rc == 0);
 
@@ -743,7 +743,7 @@ void zmq::session_base_t::start_connecting (bool wait_)
 #endif
 
 #ifdef ZMQ_HAVE_NORM
-    if (_addr->protocol == "norm") {
+    if (_addr->protocol == protocol_name::norm) {
         //  At this point we'll create message pipes to the session straight
         //  away. There's no point in delaying it as no concept of 'connect'
         //  exists with NORM anyway.
@@ -753,7 +753,8 @@ void zmq::session_base_t::start_connecting (bool wait_)
               new (std::nothrow) norm_engine_t (io_thread, options);
             alloc_assert (norm_sender);
 
-            int rc = norm_sender->init (_addr->address.c_str (), true, false);
+            const int rc =
+              norm_sender->init (_addr->address.c_str (), true, false);
             errno_assert (rc == 0);
 
             send_attach (this, norm_sender);
@@ -764,7 +765,8 @@ void zmq::session_base_t::start_connecting (bool wait_)
               new (std::nothrow) norm_engine_t (io_thread, options);
             alloc_assert (norm_receiver);
 
-            int rc = norm_receiver->init (_addr->address.c_str (), false, true);
+            const int rc =
+              norm_receiver->init (_addr->address.c_str (), false, true);
             errno_assert (rc == 0);
 
             send_attach (this, norm_receiver);
@@ -789,7 +791,6 @@ zmq::hello_msg_session_t::hello_msg_session_t (io_thread_t *io_thread_,
 zmq::hello_msg_session_t::~hello_msg_session_t ()
 {
 }
-
 
 int zmq::hello_msg_session_t::pull_msg (msg_t *msg_)
 {

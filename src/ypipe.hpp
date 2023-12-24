@@ -169,7 +169,18 @@ template <typename T, int N> class ypipe_t ZMQ_FINAL : public ypipe_base_t<T>
     //  Points past the last flushed item. If it is NULL,
     //  reader is asleep. This pointer should be always accessed using
     //  atomic operations.
+
+#if defined(_MSC_VER)
+    __declspec (align (ZMQ_CACHELINE_SIZE)) atomic_ptr_t<T> _c;
+    unsigned char _padding[ZMQ_CACHELINE_SIZE - sizeof (atomic_ptr_t<T>)];
+#elif defined(__GNUC__) || defined(__INTEL_COMPILER)                           \
+  || (defined(__SUNPRO_C) && __SUNPRO_C >= 0x590)                              \
+  || (defined(__SUNPRO_CC) && __SUNPRO_CC >= 0x590)
+    atomic_ptr_t<T> _c __attribute__ ((aligned (ZMQ_CACHELINE_SIZE)));
+    unsigned char _padding[ZMQ_CACHELINE_SIZE - sizeof (atomic_ptr_t<T>)];
+#else
     atomic_ptr_t<T> _c;
+#endif
 
     ZMQ_NON_COPYABLE_NOR_MOVABLE (ypipe_t)
 };
