@@ -5,6 +5,8 @@
 
 #include <string.h>
 
+#define PRIVATE_EXPERIMENT_MULTICAST "224.0.1.20"
+
 // NOTE: on OSX the endpoint returned by ZMQ_LAST_ENDPOINT may be quite long,
 //       ensure we have extra space for that:
 #define SOCKET_STRING_LEN (MAX_SOCKET_STRING * 4)
@@ -14,10 +16,37 @@ SETUP_TEARDOWN_TESTCONTEXT
 int test_defaults (int send_hwm_, int msg_cnt_, const char *endpoint_)
 {
     char pub_endpoint[SOCKET_STRING_LEN];
+    size_t len = sizeof (pub_endpoint);
 
     // Set up and bind XPUB socket
     void *pub_socket = test_context_socket (ZMQ_XPUB);
-    test_bind (pub_socket, endpoint_, pub_endpoint, sizeof pub_endpoint);
+
+    //
+    // Bind publisher. It is possible that the
+    // library is built to support some transport that
+    // is not available on the test system. That is OK,
+    // for example the test system cannot possibly run
+    // in a Hyper-V hosted VM *and* a KVM-hosted VM at
+    // the same time but the library can be built with
+    // support for both Hyper-V and VSock transports,
+    // so it is OK to ignore the test if the AF isn't
+    // supported _on the test system_.
+    //
+
+    if (zmq_bind (pub_socket, endpoint_) == -1) {
+        test_context_socket_close (pub_socket);
+        if (zmq_errno () == EAFNOSUPPORT) {
+            TEST_IGNORE_MESSAGE (
+              "Address family not supported on this system, ignoring test.");
+        } else {
+            test_assert_success_message_errno_helper (
+              -1, NULL, "zmq_bind (publisher, address)", __LINE__);
+        }
+    }
+
+    //  Retrieve the effective endpoint
+    TEST_ASSERT_SUCCESS_ERRNO (
+      zmq_getsockopt (pub_socket, ZMQ_LAST_ENDPOINT, pub_endpoint, &len));
 
     // Set up and connect SUB socket
     void *sub_socket = test_context_socket (ZMQ_SUB);
@@ -82,10 +111,37 @@ int receive (void *socket_, int *is_termination_)
 int test_blocking (int send_hwm_, int msg_cnt_, const char *endpoint_)
 {
     char pub_endpoint[SOCKET_STRING_LEN];
+    size_t len = sizeof (pub_endpoint);
 
     // Set up bind socket
     void *pub_socket = test_context_socket (ZMQ_XPUB);
-    test_bind (pub_socket, endpoint_, pub_endpoint, sizeof pub_endpoint);
+
+    //
+    // Bind publisher. It is possible that the
+    // library is built to support some transport that
+    // is not available on the test system. That is OK,
+    // for example the test system cannot possibly run
+    // in a Hyper-V hosted VM *and* a KVM-hosted VM at
+    // the same time but the library can be built with
+    // support for both Hyper-V and VSock transports,
+    // so it is OK to ignore the test if the AF isn't
+    // supported _on the test system_.
+    //
+
+    if (zmq_bind (pub_socket, endpoint_) == -1) {
+        test_context_socket_close (pub_socket);
+        if (zmq_errno () == EAFNOSUPPORT) {
+            TEST_IGNORE_MESSAGE (
+              "Address family not supported on this system, ignoring test.");
+        } else {
+            test_assert_success_message_errno_helper (
+              -1, NULL, "zmq_bind (publisher, address)", __LINE__);
+        }
+    }
+
+    //  Retrieve the effective endpoint
+    TEST_ASSERT_SUCCESS_ERRNO (
+      zmq_getsockopt (pub_socket, ZMQ_LAST_ENDPOINT, pub_endpoint, &len));
 
     // Set up connect socket
     void *sub_socket = test_context_socket (ZMQ_SUB);
@@ -259,8 +315,24 @@ void test_blocking (const char *bind_endpoint_)
 DEFINE_REGULAR_TEST_CASES (tcp, "tcp://127.0.0.1:*")
 DEFINE_REGULAR_TEST_CASES (inproc, "inproc://a")
 
-#if !defined(ZMQ_HAVE_WINDOWS) && !defined(ZMQ_HAVE_GNU)
+#if !defined(ZMQ_HAVE_GNU)
 DEFINE_REGULAR_TEST_CASES (ipc, "ipc://*")
+#endif
+
+#if defined ZMQ_HAVE_WS
+DEFINE_REGULAR_TEST_CASES (ws, "ws://localhost:6515")
+#endif
+#if defined ZMQ_HAVE_WSS
+DEFINE_REGULAR_TEST_CASES (wss, "wss://localhost:6516")
+#endif
+#if defined ZMQ_HAVE_VMCI
+DEFINE_REGULAR_TEST_CASES (vmci, "vmci://*:*")
+#endif
+#if defined ZMQ_HAVE_VSOCK
+DEFINE_REGULAR_TEST_CASES (vsock, "vsock://2:2223")
+#endif
+#if defined ZMQ_HAVE_HVSOCKET
+DEFINE_REGULAR_TEST_CASES (hyperv, "hyperv://loopback:3334")
 #endif
 
 int ZMQ_CDECL main ()
@@ -272,9 +344,26 @@ int ZMQ_CDECL main ()
     RUN_REGULAR_TEST_CASES (tcp);
     RUN_REGULAR_TEST_CASES (inproc);
 
-#if !defined(ZMQ_HAVE_WINDOWS) && !defined(ZMQ_HAVE_GNU)
+#if !defined(ZMQ_HAVE_GNU)
     RUN_REGULAR_TEST_CASES (ipc);
 #endif
+
+#if defined ZMQ_HAVE_WS
+    RUN_REGULAR_TEST_CASES (ws);
+#endif
+#if defined ZMQ_HAVE_WSS
+    RUN_REGULAR_TEST_CASES (wss);
+#endif
+#if defined ZMQ_HAVE_VMCI
+    RUN_REGULAR_TEST_CASES (vmci);
+#endif
+#if defined ZMQ_HAVE_VSOCK
+    RUN_REGULAR_TEST_CASES (vsock);
+#endif
+#if defined ZMQ_HAVE_HVSOCKET
+    RUN_REGULAR_TEST_CASES (hyperv);
+#endif
+
     RUN_TEST (test_reset_hwm);
     return UNITY_END ();
 }

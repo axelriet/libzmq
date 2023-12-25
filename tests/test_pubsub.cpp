@@ -18,6 +18,7 @@
 #ifdef CODEC_WORKOUT
 #include <thread>
 #include <chrono>
+#include <memchk.h>
 #endif
 
 #define PRIVATE_EXPERIMENT_MULTICAST "224.0.1.20"
@@ -25,41 +26,19 @@
 SETUP_TEARDOWN_TESTCONTEXT
 
 #ifdef CODEC_WORKOUT
-#include <thread>
-
-void sleep (int ms)
-{
-    std::this_thread::sleep_for (std::chrono::milliseconds (ms));
-}
-
-int memchk (_In_reads_bytes_ (_Size) void *_Src,
-            _In_ int _Val,
-            _In_ size_t _Size)
-{
-    const unsigned char v = (unsigned char) _Val;
-    const unsigned char *p = (unsigned char *) _Src;
-
-    for (int i = 0; i < _Size; i++) {
-        if (p[i] != v) {
-            return -1;
-        }
-    }
-
-    return 0;
-}
 
 void test_encoder_decoder (void *publisher, void *subscriber)
 {
     size_t size;
     int retries = 5;
-    const int MAX_SIZE = 3000;
     std::atomic<bool> started (false);
+    const int MAX_SIZE = 3000; // 1/2(n*(n+n)) = 4,501,500 msg
 
     auto sender = std::thread ([publisher, &started] () {
         //
         // Send a bunch of messages of various sizes: N messages
         // of size 0, (N-1) messages of size 1, etc. The message
-        // content is filled with LOBYTE(message size) so we can
+        // content is filled with LOBYTE(message_size) so we can
         // test the content integrity on the receiving side.
         //
 
@@ -77,7 +56,7 @@ void test_encoder_decoder (void *publisher, void *subscriber)
     });
 
     while (!started) {
-        sleep (100);
+        msleep (100);
     }
 
     for (;;) {
@@ -92,7 +71,7 @@ void test_encoder_decoder (void *publisher, void *subscriber)
 
             if (zmq_errno () == EAGAIN) {
                 if (retries--) {
-                    sleep (100);
+                    msleep (100);
                     continue;
                 }
                 break;
@@ -104,7 +83,7 @@ void test_encoder_decoder (void *publisher, void *subscriber)
         }
 
         size = zmq_msg_size (&msg);
-        TEST_ASSERT_TRUE_MESSAGE (memchk (zmq_msg_data (&msg), (int) size, size)
+        TEST_ASSERT_TRUE_MESSAGE (memchk ((char*)zmq_msg_data (&msg), (int) size, size)
                                     == 0,
                                   "Unexpected message content!");
         TEST_ASSERT_SUCCESS_ERRNO (zmq_msg_close (&msg));
@@ -379,7 +358,7 @@ void test_ipc ()
 #if defined ZMQ_HAVE_IPC
     test ("ipc://test_pubsub");
 #else
-    TEST_IGNORE_MESSAGE ("libzmq without WebSockets, ignoring test.");
+    TEST_IGNORE_MESSAGE ("libzmq without IPC, ignoring test.");
 #endif
 }
 
