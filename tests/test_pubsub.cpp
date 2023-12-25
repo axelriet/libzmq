@@ -425,17 +425,17 @@ void test_hvsocket ()
 #if 0
 
     test ("hyperv://0:*"); // VM/container index (first one), any port.
-    test ("hyperv://0:4444"); // VM/container index (first one), specific port with VSOCK template.
+    test ("hyperv://0:6666"); // VM/container index (first one), specific port with VSOCK template.
     test ("hyperv://0:44622b22-7665-4499-b2e3-16d5f9bc14d3"); // VM/container index (first one), explicit (registered) service id.
     test ("hyperv://0:NMBus"); // VM/container index (first one), explicit (registered) service id by "ElementName"
 
     test ("hyperv://WinDev2311Eval:*"); // Symbolic VM/container name, any port.
-    test ("hyperv://WinDev2311Eval:4444"); // Symbolic VM/container name, specific port with VSOCK template.
+    test ("hyperv://WinDev2311Eval:6666"); // Symbolic VM/container name, specific port with VSOCK template.
     test ("hyperv://WinDev2311Eval:44622b22-7665-4499-b2e3-16d5f9bc14d3"); // Symbolic VM/container name, explicit (registered) service id.
     test ("hyperv://WinDev2311Eval:NMBus"); // Symbolic VM/container name, explicit (registered) service id by "ElementName"
 
     test ("hyperv://af5f35e3-fd7a-4573-9449-e47223939979:*"); // Explicit VM/container id, any port.
-    test ("hyperv://af5f35e3-fd7a-4573-9449-e47223939979:4444"); // Explicit VM/container id, specific port with VSOCK template.
+    test ("hyperv://af5f35e3-fd7a-4573-9449-e47223939979:6666"); // Explicit VM/container id, specific port with VSOCK template.
     test ("hyperv://af5f35e3-fd7a-4573-9449-e47223939979:44622b22-7665-4499-b2e3-16d5f9bc14d3"); // Explicit VM/container id, explicit (registered) service id.
     test ("hyperv://af5f35e3-fd7a-4573-9449-e47223939979:NMBus"); // Explicit VM/container id, explicit (registered) service id by "ElementName"
 
