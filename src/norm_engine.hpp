@@ -23,45 +23,45 @@ class io_thread_t;
 class msg_t;
 class session_base_t;
 
-class norm_engine_t ZMQ_FINAL : public io_object_t, public i_engine
+class norm_engine_t : public io_object_t, public i_engine
 {
   public:
     norm_engine_t (zmq::io_thread_t *parent_, const options_t &options_);
-    ~norm_engine_t () ZMQ_FINAL;
+    ~norm_engine_t ();
 
     // create NORM instance, session, etc
     int init (const char *network_, bool send, bool recv);
     void shutdown ();
 
-    bool has_handshake_stage () ZMQ_FINAL { return false; };
+    bool has_handshake_stage () { return false; };
 
     //  i_engine interface implementation.
     //  Plug the engine to the session.
     void plug (zmq::io_thread_t *io_thread_,
-               class session_base_t *session_) ZMQ_FINAL;
+               class session_base_t *session_);
 
     //  Terminate and deallocate the engine. Note that 'detached'
     //  events are not fired on termination.
-    void terminate () ZMQ_FINAL;
+    void terminate ();
 
     //  This method is called by the session to signalise that more
     //  messages can be written to the pipe.
-    bool restart_input () ZMQ_FINAL;
+    bool restart_input ();
 
     //  This method is called by the session to signalise that there
     //  are messages to send available.
-    void restart_output () ZMQ_FINAL;
+    void restart_output ();
 
-    void zap_msg_available () ZMQ_FINAL {}
+    void zap_msg_available () {}
 
-    const endpoint_uri_pair_t &get_endpoint () const ZMQ_FINAL;
+    const endpoint_uri_pair_t &get_endpoint () const;
 
     // i_poll_events interface implementation.
     // (we only need in_event() for NormEvent notification)
     // (i.e., don't have any output events or timers (yet))
     void in_event ();
 
-  private:
+  protected:
     void unplug ();
     void send_data ();
     void recv_data (NormObjectHandle stream);
@@ -140,7 +140,7 @@ class norm_engine_t ZMQ_FINAL : public io_object_t, public i_engine
         List *AccessList () { return list; }
 
 
-      private:
+      protected:
         NormObjectHandle norm_stream;
         int64_t max_msg_size;
         bool zero_copy;
@@ -199,6 +199,21 @@ class norm_engine_t ZMQ_FINAL : public io_object_t, public i_engine
 #endif
 
 }; // end class norm_engine_t
+
+class norm_engine2_t : public norm_engine_t
+{
+  public:
+      norm_engine2_t (io_thread_t *parent_,
+                                       const options_t &options_) :
+        norm_engine_t (parent_, options_)
+    {
+    }
+
+  private:
+    void send_data ();
+    void recv_data (NormObjectHandle stream);
+};
+
 }
 
 #endif // ZMQ_HAVE_NORM

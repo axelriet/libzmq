@@ -127,6 +127,7 @@ src_libzmq_la_SOURCES = \
 	src/mtrie.hpp \
 	src/mutex.hpp \
 	src/norm_engine.cpp \
+	src/norm_engine2.cpp \
 	src/norm_engine.hpp \
 	src/null_mechanism.cpp \
 	src/null_mechanism.hpp \

@@ -343,7 +343,7 @@ int zmq::socket_base_t::check_protocol (const std::string &protocol_) const
         && protocol_ != protocol_name::tipc
 #endif
 #if defined ZMQ_HAVE_NORM
-        && protocol_ != protocol_name::norm
+        && protocol_ != protocol_name::norm && protocol_ != protocol_name::xnorm
 #endif
 #if defined ZMQ_HAVE_VMCI
         && protocol_ != protocol_name::vmci
@@ -365,11 +365,12 @@ int zmq::socket_base_t::check_protocol (const std::string &protocol_) const
 #if defined ZMQ_HAVE_OPENPGM || defined ZMQ_HAVE_NORM
 #if defined ZMQ_HAVE_OPENPGM && defined ZMQ_HAVE_NORM
     if ((protocol_ == protocol_name::pgm || protocol_ == protocol_name::epgm
-         || protocol_ == protocol_name::norm)
+         || protocol_ == protocol_name::norm
+         || protocol_ == protocol_name::xnorm)
 #elif defined ZMQ_HAVE_OPENPGM
     if ((protocol_ == protocol_name::pgm || protocol_ == protocol_name::epgm)
 #else // defined ZMQ_HAVE_NORM
-    if (protocol_ == protocol_name::norm
+    if (protocol_ == protocol_name::norm || protocol_ == protocol_name::xnorm)
 #endif
         && options.type != ZMQ_PUB && options.type != ZMQ_SUB
         && options.type != ZMQ_XPUB && options.type != ZMQ_XSUB) {
@@ -556,11 +557,12 @@ int zmq::socket_base_t::bind (const char *endpoint_uri_)
 #if defined ZMQ_HAVE_OPENPGM || defined ZMQ_HAVE_NORM
 #if defined ZMQ_HAVE_OPENPGM && defined ZMQ_HAVE_NORM
     if (protocol == protocol_name::pgm || protocol == protocol_name::epgm
-        || protocol == protocol_name::norm) {
+        || protocol == protocol_name::norm
+        || protocol == protocol_name::xnorm) {
 #elif defined ZMQ_HAVE_OPENPGM
     if (protocol == protocol_name::pgm || protocol == protocol_name::epgm) {
 #else // defined ZMQ_HAVE_NORM
-    if (protocol == protocol_name::norm) {
+    if (protocol == protocol_name::norm || protocol == protocol_name::xnorm) {
 #endif
         //  For convenience's sake, bind can be used interchangeable with
         //  connect for PGM, EPGM, NORM transports.
@@ -1135,14 +1137,16 @@ int zmq::socket_base_t::connect_internal (const char *endpoint_uri_)
 #if defined ZMQ_HAVE_OPENPGM && defined ZMQ_HAVE_NORM
     const bool subscribe_to_all =
       protocol == protocol_name::pgm || protocol == protocol_name::epgm
-      || protocol == protocol_name::norm || protocol == protocol_name::udp;
+      || protocol == protocol_name::norm || protocol == protocol_name::xnorm
+      || protocol == protocol_name::udp;
 #elif defined ZMQ_HAVE_OPENPGM
     const bool subscribe_to_all = protocol == protocol_name::pgm
                                   || protocol == protocol_name::epgm
                                   || protocol == protocol_name::udp;
 #elif defined ZMQ_HAVE_NORM
-    const bool subscribe_to_all =
-      protocol == protocol_name::norm || protocol == protocol_name::udp;
+    const bool subscribe_to_all = protocol == protocol_name::norm
+                                  || protocol == protocol_name::xnorm
+                                  || protocol == protocol_name::udp;
 #else
     const bool subscribe_to_all = protocol == protocol_name::udp;
 #endif

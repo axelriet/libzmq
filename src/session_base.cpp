@@ -562,6 +562,7 @@ void zmq::session_base_t::reconnect ()
 #endif
 #ifdef ZMQ_HAVE_NORM
         && _addr->protocol != protocol_name::norm
+        && _addr->protocol != protocol_name::xnorm
 #endif
         && _addr->protocol != protocol_name::udp) {
         _pipe->hiccup ();
@@ -743,14 +744,28 @@ void zmq::session_base_t::start_connecting (bool wait_)
 #endif
 
 #ifdef ZMQ_HAVE_NORM
-    if (_addr->protocol == protocol_name::norm) {
+    if ((_addr->protocol == protocol_name::norm)
+        || (_addr->protocol == protocol_name::xnorm)) {
+        //
         //  At this point we'll create message pipes to the session straight
         //  away. There's no point in delaying it as no concept of 'connect'
         //  exists with NORM anyway.
+        //
         if (options.type == ZMQ_PUB || options.type == ZMQ_XPUB) {
+            //
             //  NORM sender.
-            norm_engine_t *norm_sender =
-              new (std::nothrow) norm_engine_t (io_thread, options);
+            //
+
+            norm_engine_t *norm_sender;
+
+            if (_addr->protocol == protocol_name::norm) {
+                norm_sender =
+                  new (std::nothrow) norm_engine_t (io_thread, options);
+            } else {
+                norm_sender =
+                  new (std::nothrow) norm_engine2_t (io_thread, options);
+            }
+
             alloc_assert (norm_sender);
 
             const int rc =
@@ -759,10 +774,19 @@ void zmq::session_base_t::start_connecting (bool wait_)
 
             send_attach (this, norm_sender);
         } else { // ZMQ_SUB or ZMQ_XSUB
-
+            //
             //  NORM receiver.
-            norm_engine_t *norm_receiver =
-              new (std::nothrow) norm_engine_t (io_thread, options);
+            //
+
+            norm_engine_t *norm_receiver;
+
+            if (_addr->protocol == protocol_name::norm) {
+                norm_receiver =
+                  new (std::nothrow) norm_engine_t (io_thread, options);
+            } else {
+                norm_receiver =
+                  new (std::nothrow) norm_engine2_t (io_thread, options);
+            }
             alloc_assert (norm_receiver);
 
             const int rc =

@@ -168,6 +168,15 @@ void test_norm ()
 #endif
 }
 
+void test_xnorm ()
+{
+#if defined ZMQ_HAVE_NORM
+    test ("xnorm://" PRIVATE_EXPERIMENT_MULTICAST ":6211");
+#else
+    TEST_IGNORE_MESSAGE ("libzmq without NORM, ignoring test.");
+#endif
+}
+
 #if defined ZMQ_HAVE_OPENPGM
 #if defined ZMQ_HAVE_WINDOWS
 int GetAdapterIpAddress (
@@ -475,6 +484,7 @@ int ZMQ_CDECL main ()
     RUN_TEST (test_pgm);
     RUN_TEST (test_epgm);
     RUN_TEST (test_norm);
+    RUN_TEST (test_xnorm);
 
     RUN_TEST (test_vmci);
     RUN_TEST (test_vsock);

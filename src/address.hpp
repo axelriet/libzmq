@@ -49,6 +49,7 @@ static const char epgm[] = "epgm";
 #endif
 #ifdef ZMQ_HAVE_NORM
 static const char norm[] = "norm";
+static const char xnorm[] = "xnorm";
 #endif
 #ifdef ZMQ_HAVE_WS
 static const char ws[] = "ws";

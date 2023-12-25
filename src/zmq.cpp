@@ -1918,7 +1918,8 @@ ZMQ_EXPORT_IMPL (int) zmq_has (_In_z_ const char *capability_)
 #endif
 
 #if defined(ZMQ_HAVE_NORM)
-    if (strcmp (capability_, zmq::protocol_name::norm) == 0)
+    if (strcmp (capability_, zmq::protocol_name::norm) == 0
+        || strcmp (capability_, zmq::protocol_name::xnorm) == 0)
         return true;
 #endif
 
