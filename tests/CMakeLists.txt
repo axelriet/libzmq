@@ -257,7 +257,7 @@ if(MSVC_VERSION LESS 1600)
 endif()
 
 # add include dirs for all targets
-include_directories("${ZeroMQ_SOURCE_DIR}/../include" "${ZeroMQ_BINARY_DIR}")
+include_directories("${ZeroMQ_SOURCE_DIR}/../include" "${ZeroMQ_BINARY_DIR}" "${CMAKE_CURRENT_LIST_DIR}/../external/memchk/include")
 
 if(WIN32)
   add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
