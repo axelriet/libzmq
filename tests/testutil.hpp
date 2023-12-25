@@ -28,7 +28,7 @@
 //  This defines the settle time used in tests; raise this if we
 //  get test failures on slower systems due to binds/connects not
 //  settled. Tested to work reliably at 1 msec on a fast PC.
-#define SETTLE_TIME 300 //  In msec
+#define SETTLE_TIME 50 //  In msec
 //  Commonly used buffer size for ZMQ_LAST_ENDPOINT
 //  this used to be sizeof ("tcp://[::ffff:127.127.127.127]:65536"), but this
 //  may be too short for ipc wildcard binds, e.g.
