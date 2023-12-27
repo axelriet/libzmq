@@ -65,7 +65,7 @@ class pgm_sender_t ZMQ_FINAL : public io_object_t, public i_engine
     msg_t msg;
 
     //  Keeps track of message boundaries.
-    bool more_flag;
+    bool more;
 
     //  PGM socket.
     pgm_socket_t pgm_socket;

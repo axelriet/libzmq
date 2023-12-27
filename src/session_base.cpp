@@ -758,12 +758,12 @@ void zmq::session_base_t::start_connecting (bool wait_)
 
             norm_engine_t *norm_sender;
 
-            if (_addr->protocol == protocol_name::norm) {
-                norm_sender =
-                  new (std::nothrow) norm_engine_t (io_thread, options);
-            } else {
+            if (_addr->protocol == protocol_name::xnorm) {
                 norm_sender =
                   new (std::nothrow) norm_engine2_t (io_thread, options);
+            } else {
+                norm_sender =
+                  new (std::nothrow) norm_engine_t (io_thread, options);
             }
 
             alloc_assert (norm_sender);
@@ -780,12 +780,12 @@ void zmq::session_base_t::start_connecting (bool wait_)
 
             norm_engine_t *norm_receiver;
 
-            if (_addr->protocol == protocol_name::norm) {
-                norm_receiver =
-                  new (std::nothrow) norm_engine_t (io_thread, options);
-            } else {
+            if (_addr->protocol == protocol_name::xnorm) {
                 norm_receiver =
                   new (std::nothrow) norm_engine2_t (io_thread, options);
+            } else {
+                norm_receiver =
+                  new (std::nothrow) norm_engine_t (io_thread, options);
             }
             alloc_assert (norm_receiver);
 

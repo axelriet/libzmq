@@ -1,6 +1,7 @@
 #include "precompiled.hpp"
 
 #include "platform.hpp"
+#include "wire.hpp"
 
 #if defined ZMQ_HAVE_NORM
 
@@ -14,115 +15,84 @@
 
 void zmq::norm_engine2_t::send_data ()
 {
-    //
-    // Here we write as much as is available or we can
-    //
+    if (intermediate_buffer.get() == NULL) {
+        intermediate_buffer.reset (
+          new (std::nothrow) unsigned char[INTERMEDIATE_BUFFER_SIZE_KB * 1024]);
+        alloc_assert (intermediate_buffer.get ());
+    }
 
-    while (zmq_output_ready && norm_tx_ready) {
-        if (0 == tx_len) {
-            //
-            // Our tx_buffer needs data to send
-            // Get more data from encoder
-            //
+    if (write_size == 0) {
+        //
+        //  First two bytes (sizeof uint16_t) are used to store message
+        //  offset in following steps. Note that by passing our buffer to
+        //  the get data function we prevent it from returning its own buffer.
+        //
 
-            size_t space = BUFFER_SIZE;
-            unsigned char *bufPtr = (unsigned char *) tx_buffer;
-            tx_len = (unsigned int) zmq_encoder.encode (&bufPtr, space);
+        unsigned char *bf = intermediate_buffer.get () + sizeof (uint16_t);
+        size_t bfsz = (INTERMEDIATE_BUFFER_SIZE_KB * 1024) - sizeof (uint16_t);
+        uint16_t offset = 0xffff;
 
-            if (0 == tx_len) {
-                if (!tx_first_msg) {
-                    //
-                    // We don't need to mark eom/flush until a message is sent
-                    //
-                    //
-                    // A prior message was completely written to stream, so
-                    // mark end-of-message and possibly flush (to force packet transmission,
-                    // even if it's not a full segment so message gets delivered quickly)
-                    // NormStreamMarkEom(norm_tx_stream);  // the flush below marks eom
-                    // Note NORM_FLUSH_ACTIVE makes NORM fairly chatty for low duty cycle messaging
-                    // but makes sure content is delivered quickly.  Positive acknowledgements
-                    // with flush override would make NORM more succinct here
-                    //
+        size_t bytes = encoder.encode (&bf, bfsz);
 
-                    NormStreamFlush (norm_tx_stream, true, NORM_FLUSH_ACTIVE);
-                }
-
-                //
-                // Need to pull and load a new message to send
-                //
-
-                if (-1 == zmq_session->pull_msg (&tx_msg)) {
-                    //
-                    // We need to wait for "restart_output()" to be called by ZMQ
-                    //
-
-                    zmq_output_ready = false;
-                    break;
-                }
-
-                if (tx_first_msg) {
-                    tx_first_msg = false;
-                }
-
-                zmq_encoder.load_msg (&tx_msg);
-
-                //
-                // Should we write message size header for NORM to use? Or expect NORM
-                // receiver to decode ZMQ message framing format(s)?
-                // OK - we need to use a byte to denote when the ZMQ frame is the _first_
-                //      frame of a message so it can be decoded properly when a receiver
-                //      'syncs' mid-stream.  We key off the the state of the 'more_flag'
-                //      I.e.,If  more_flag _was_ false previously, this is the first
-                //      frame of a ZMQ message.
-                //
-
-                if (tx_more_bit) {
-                    tx_buffer[0] =
-                      (char) -1; // this is not first frame of message
-                } else {
-                    tx_buffer[0] = 0x00; // this is first frame of message
-                }
-
-                tx_more_bit = (0 != (tx_msg.flags () & msg_t::more));
-
-                //
-                // Go ahead an get a first chunk of the message
-                //
-
-                bufPtr++;
-                space--;
-                tx_len = 1 + (unsigned int) zmq_encoder.encode (&bufPtr, space);
-                tx_index = 0;
+        while (bytes < bfsz) {
+            if (!more && (offset == 0xffff)) {
+                offset = static_cast<uint16_t> (bytes);
             }
-        }
 
-        //
-        // Do we have data in our tx_buffer pending
-        //
+            int rc = zmq_session->pull_msg (&msg);
 
-        if (tx_index < tx_len) {
-            //
-            // We have data in our tx_buffer to send, so write it to the stream
-            //
-
-            tx_index += NormStreamWrite (norm_tx_stream, tx_buffer + tx_index,
-                                         tx_len - tx_index);
-
-            if (tx_index < tx_len) {
-                //
-                // NORM stream buffer full, wait for NORM_TX_QUEUE_VACANCY
-                //
-
-                norm_tx_ready = false;
+            if (rc == -1) {
+                zmq_output_ready = false;
                 break;
             }
-            tx_len = 0; // all buffered data was written
+
+            more = msg.flagsp () & msg_t::more;
+            encoder.load_msg (&msg);
+
+            bf = intermediate_buffer.get () + sizeof (uint16_t) + bytes;
+            bytes += encoder.encode (&bf, bfsz - bytes);
         }
-    } // end while (zmq_output_ready && norm_tx_ready)
-} // end zmq::norm_engine2_t::send_data()
+
+        //
+        //  Bail out if there are no data to write.
+        //
+
+        if (bytes == 0) {
+            return;
+        }
+
+        write_size = sizeof (uint16_t) + bytes;
+
+        //
+        //  Put offset information in the buffer.
+        //
+
+        put_uint16 (intermediate_buffer.get (), offset);
+    }
+
+    size_t nbytes = NormStreamWrite (
+      norm_tx_stream, (char *) intermediate_buffer.get (), write_size);
+
+    if (nbytes == write_size) {
+        //
+        // The whole chunk of clubbed messages was written, flush the stream.
+        //
+
+        NormStreamFlush (norm_tx_stream, true, NORM_FLUSH_ACTIVE);
+        write_size = 0;
+    }  else {
+        //
+        // NORM stream buffer full, wait for NORM_TX_QUEUE_VACANCY.
+        //
+
+        write_size = (write_size - nbytes);
+        norm_tx_ready = false;
+    }
+}
 
 void zmq::norm_engine2_t::recv_data (NormObjectHandle object)
 {
+#if 0
     if (NORM_OBJECT_INVALID != object) {
         //
         // Call result of NORM_RX_OBJECT_UPDATED notification
@@ -381,6 +351,7 @@ void zmq::norm_engine2_t::recv_data (NormObjectHandle object)
     //
 
     zmq_session->flush ();
-} // end zmq::norm_engine2_t::recv_data()
+#endif
+}
 
 #endif // ZMQ_HAVE_NORM

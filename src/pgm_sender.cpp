@@ -21,7 +21,7 @@ zmq::pgm_sender_t::pgm_sender_t (io_thread_t *parent_,
     has_rx_timer (false),
     session (NULL),
     encoder (0),
-    more_flag (false),
+    more (false),
     pgm_socket (false, options_),
     options (options_),
     handle (static_cast<handle_t> (NULL)),
@@ -164,12 +164,12 @@ void zmq::pgm_sender_t::out_event ()
 
         size_t bytes = encoder.encode (&bf, bfsz);
         while (bytes < bfsz) {
-            if (!more_flag && offset == 0xffff)
+            if (!more && offset == 0xffff)
                 offset = static_cast<uint16_t> (bytes);
             int rc = session->pull_msg (&msg);
             if (rc == -1)
                 break;
-            more_flag = msg.flagsp () & msg_t::more;
+            more = msg.flagsp () & msg_t::more;
             encoder.load_msg (&msg);
             bf = out_buffer + sizeof (uint16_t) + bytes;
             bytes += encoder.encode (&bf, bfsz - bytes);

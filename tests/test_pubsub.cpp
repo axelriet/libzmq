@@ -30,9 +30,8 @@ SETUP_TEARDOWN_TESTCONTEXT
 void test_encoder_decoder (void *publisher, void *subscriber)
 {
     size_t size;
-    int retries = 5;
     std::atomic<bool> started (false);
-    const int MAX_SIZE = 3000; // 1/2(n*(n+n)) = 4,501,500 msg
+    const int MAX_SIZE = 3000; // 1/2(n*(n+n)) = 4,501,500 msgs
 
     auto sender = std::thread ([publisher, &started] () {
         //
@@ -44,20 +43,27 @@ void test_encoder_decoder (void *publisher, void *subscriber)
 
         started = true;
 
-        for (int i = 0; i <= MAX_SIZE; i++) {
-            for (int j = 0; j <= (MAX_SIZE - i); j++) {
+        for (int size = 0; size <= MAX_SIZE; size++) {
+            for (int count = 0; count <= (MAX_SIZE - size); count++) {
                 zmq_msg_t msg;
-                TEST_ASSERT_SUCCESS_ERRNO (zmq_msg_init_size (&msg, i));
-                memset (zmq_msg_data (&msg), (int) i, i);
+                TEST_ASSERT_SUCCESS_ERRNO (zmq_msg_init_size (&msg, size));
+                memset (zmq_msg_data (&msg), (int) size, size);
                 TEST_ASSERT_SUCCESS_ERRNO (zmq_msg_send (&msg, publisher, 0));
                 TEST_ASSERT_SUCCESS_ERRNO (zmq_msg_close (&msg));
             }
         }
     });
 
-    while (!started) {
+    //
+    // Sleep 100ms, then again 100ms etc until started.
+    //
+
+    do {
         msleep (100);
-    }
+    } while (!started);
+
+    const int RETRIES = 10;
+    int retries = RETRIES;
 
     for (;;) {
         zmq_msg_t msg;
@@ -66,7 +72,7 @@ void test_encoder_decoder (void *publisher, void *subscriber)
 
         if (rc == -1) {
             //
-            // Exit if we don't receive anything for .5s
+            // Exit if we don't receive anything for ~1s
             //
 
             if (zmq_errno () == EAGAIN) {
@@ -79,13 +85,18 @@ void test_encoder_decoder (void *publisher, void *subscriber)
                 TEST_ASSERT_SUCCESS_ERRNO (-1);
             }
 
-            retries = 5;
+            retries = RETRIES;
         }
+
+        //
+        // Check the message content integrity
+        //
 
         size = zmq_msg_size (&msg);
         TEST_ASSERT_TRUE_MESSAGE (memchk ((char*)zmq_msg_data (&msg), (int) size, size)
                                     == 0,
-                                  "Unexpected message content!");
+                                  "Unexpected message content! Corrupt data :(");
+
         TEST_ASSERT_SUCCESS_ERRNO (zmq_msg_close (&msg));
     }
 

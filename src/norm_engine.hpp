@@ -12,6 +12,8 @@
 #include "io_object.hpp"
 #include "i_engine.hpp"
 #include "options.hpp"
+#include "v1_decoder.hpp"
+#include "v1_encoder.hpp"
 #include "v2_decoder.hpp"
 #include "v2_encoder.hpp"
 
@@ -63,9 +65,8 @@ class norm_engine_t : public io_object_t, public i_engine
 
   protected:
     void unplug ();
-    void send_data ();
-    void recv_data (NormObjectHandle stream);
-
+    virtual void send_data ();
+    virtual void recv_data (NormObjectHandle stream);
 
     enum
     {
@@ -205,13 +206,48 @@ class norm_engine2_t : public norm_engine_t
   public:
       norm_engine2_t (io_thread_t *parent_,
                                        const options_t &options_) :
-        norm_engine_t (parent_, options_)
+        norm_engine_t (parent_, options_), encoder (0), write_size(0), more(false)
     {
     }
 
   private:
-    void send_data ();
-    void recv_data (NormObjectHandle stream);
+    //
+    // Our message encoder.
+    //
+
+    v1_encoder_t encoder;
+
+    //
+    // Number of bytes in the buffer to be written to the stream.
+    //
+
+    size_t write_size;
+
+    //
+    // Keeps track of message boundaries.
+    //
+
+    bool more;
+
+    //
+    // Working message.
+    //
+
+    msg_t msg;
+
+    //
+    // Intermediate buffer
+    //
+
+    enum
+    {
+        INTERMEDIATE_BUFFER_SIZE_KB = 2048
+    };
+
+    std::unique_ptr<uint8_t> intermediate_buffer;
+
+    void send_data () ZMQ_OVERRIDE;
+    void recv_data (NormObjectHandle stream) ZMQ_OVERRIDE;
 };
 
 }
