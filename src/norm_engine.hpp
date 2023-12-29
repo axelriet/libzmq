@@ -195,7 +195,7 @@ class norm_engine_t : public io_object_t, public i_engine
 #ifdef ZMQ_USE_NORM_SOCKET_WRAPPER
     fd_t
       wrapper_read_fd; // filedescriptor used to read norm events through the wrapper
-    DWORD wrapper_thread_id;
+    unsigned int wrapper_thread_id;
     HANDLE wrapper_thread_handle;
 #endif
 
@@ -206,7 +206,10 @@ class norm_engine2_t : public norm_engine_t
   public:
       norm_engine2_t (io_thread_t *parent_,
                                        const options_t &options_) :
-        norm_engine_t (parent_, options_), encoder (0), write_size(0), more(false)
+        norm_engine_t (parent_, options_),
+        _encoder (0),
+        _write_size (0),
+        _send_more (false)
     {
     }
 
@@ -214,47 +217,52 @@ class norm_engine2_t : public norm_engine_t
     {
         int result = norm_engine_t::init (network_, send, recv);
 
+        _in_batch_size = options.in_batch_size;
+        _max_message_size = options.maxmsgsize;
         _out_batch_size = options.out_batch_size;
 
         return result;
     }
 
   private:
-    //
-    // Our message encoder.
-    //
-
-    v1_encoder_t encoder;
-
-    //
-    // Number of bytes in the buffer to be written to the stream.
-    //
-
-    size_t write_size;
-
-    //
-    // Keeps track of message boundaries.
-    //
-
-    bool more;
-
-    //
-    // Working message.
-    //
-
-    msg_t msg;
-
-    //
-    // Intermediate buffer
-    //
-
-    std::unique_ptr<uint8_t> intermediate_buffer;
-
-    //
-    // Intermediate buffer
-    //
-
+    v1_encoder_t _encoder;
+    size_t _write_size;
+    bool _send_more;
+    msg_t _outgoing_msg;
     size_t _out_batch_size;
+    std::unique_ptr<uint8_t> _send_buffer;
+
+    size_t _in_batch_size;
+    size_t _max_message_size;
+
+    typedef struct PeerStreamState
+    {
+        session_base_t *_session;
+        bool _joined;
+        v1_decoder_t _decoder;
+        size_t _read_size;
+        bool _receive_more;
+        size_t _in_batch_size;
+        msg_t _incoming_msg;
+        std::unique_ptr<uint8_t> _receive_buffer;
+
+        PeerStreamState (session_base_t *session_,
+                         size_t in_batch_size_,
+                           size_t max_message_size_) :
+            _session(session_),
+            _joined (false),
+            _decoder (0, max_message_size_),
+            _read_size (0),
+            _receive_more (false),
+            _in_batch_size (in_batch_size_)
+        {
+            _incoming_msg.init ();
+            _receive_buffer.reset (
+              new (std::nothrow) unsigned char[_in_batch_size]);
+            alloc_assert (_receive_buffer.get ());
+        }
+        int ProcessInput (NormObjectHandle object);
+    } PeerStreamState;
 
     void send_data () ZMQ_OVERRIDE;
     void recv_data (NormObjectHandle stream) ZMQ_OVERRIDE;

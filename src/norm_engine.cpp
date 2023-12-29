@@ -23,7 +23,7 @@ struct norm_wrapper_thread_args_t
     NormInstanceHandle norm_instance_handle;
 };
 
-DWORD WINAPI normWrapperThread (LPVOID lpParam);
+static UINT WINAPI normWrapperThread (LPVOID lpParam);
 #endif
 
 zmq::norm_engine_t::norm_engine_t (io_thread_t *parent_,
@@ -305,8 +305,8 @@ void zmq::norm_engine_t::plug (io_thread_t *io_thread_,
         send_data ();
 
 #ifdef ZMQ_USE_NORM_SOCKET_WRAPPER
-    wrapper_thread_handle = CreateThread (NULL, 0, normWrapperThread,
-                                          threadArgs, 0, &wrapper_thread_id);
+    wrapper_thread_handle = (HANDLE) _beginthreadex (
+      NULL, 0, normWrapperThread, threadArgs, 0, &wrapper_thread_id);
 #endif
 
 } // end zmq::norm_engine_t::init()
@@ -810,7 +810,7 @@ const zmq::endpoint_uri_pair_t &zmq::norm_engine_t::get_endpoint () const
 
 #ifdef ZMQ_USE_NORM_SOCKET_WRAPPER
 #include <iostream>
-DWORD WINAPI normWrapperThread (LPVOID lpParam)
+static UINT WINAPI normWrapperThread (LPVOID lpParam)
 {
     norm_wrapper_thread_args_t *norm_wrapper_thread_args =
       (norm_wrapper_thread_args_t *) lpParam;

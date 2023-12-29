@@ -15,14 +15,13 @@
 
 void zmq::norm_engine2_t::send_data ()
 {
-    if (intermediate_buffer.get() == NULL) {
-        intermediate_buffer.reset (
+    if (_send_buffer.get() == NULL) {
+        _send_buffer.reset (
           new (std::nothrow) unsigned char[_out_batch_size]);
-        alloc_assert (intermediate_buffer.get ());
+        alloc_assert (_send_buffer.get ());
     }
 
-
-    if (write_size == 0) {
+    if (_write_size == 0) {
         //
         //  First two bytes (sizeof uint16_t) are used to store message
         //  offset in following steps. Note that by passing our buffer to
@@ -31,29 +30,29 @@ void zmq::norm_engine2_t::send_data ()
 
 check_for_more:
 
-        unsigned char *bf = intermediate_buffer.get () + sizeof (uint16_t);
-        size_t bfsz = (_out_batch_size) - sizeof (uint16_t);
+        unsigned char *bf = _send_buffer.get () + sizeof (uint16_t);
+        const size_t bfsz = (_out_batch_size) - sizeof (uint16_t);
         uint16_t offset = 0xffff;
 
-        size_t bytes = encoder.encode (&bf, bfsz);
+        size_t bytes = _encoder.encode (&bf, bfsz);
 
         while (bytes < bfsz) {
-            if (!more && (offset == 0xffff)) {
+            if (!_send_more && (offset == 0xffff)) {
                 offset = static_cast<uint16_t> (bytes);
             }
 
-            int rc = zmq_session->pull_msg (&msg);
+            const int rc = zmq_session->pull_msg (&_outgoing_msg);
 
             if (rc == -1) {
                 zmq_output_ready = false;
                 break;
             }
 
-            more = msg.flagsp () & msg_t::more;
-            encoder.load_msg (&msg);
+            _send_more = (_outgoing_msg.flagsp () & msg_t::more) != 0;
+            _encoder.load_msg (&_outgoing_msg);
 
-            bf = intermediate_buffer.get () + sizeof (uint16_t) + bytes;
-            bytes += encoder.encode (&bf, bfsz - bytes);
+            bf = _send_buffer.get () + sizeof (uint16_t) + bytes;
+            bytes += _encoder.encode (&bf, bfsz - bytes);
         }
 
         //
@@ -64,25 +63,25 @@ check_for_more:
             return;
         }
 
-        write_size = sizeof (uint16_t) + bytes;
+        _write_size = sizeof (uint16_t) + bytes;
 
         //
         //  Put offset information in the buffer.
         //
 
-        put_uint16 (intermediate_buffer.get (), offset);
+        put_uint16 (_send_buffer.get (), offset);
     }
 
-    size_t nbytes = NormStreamWrite (
-      norm_tx_stream, (char *) intermediate_buffer.get (), write_size);
+    const size_t bytes_written = NormStreamWrite (
+      norm_tx_stream, reinterpret_cast<char *>(_send_buffer.get ()), _write_size);
 
-    if (nbytes == write_size) {
+    if (bytes_written == _write_size) {
         //
         // The whole chunk of clubbed messages was written, flush the stream.
         //
 
         NormStreamFlush (norm_tx_stream, true, NORM_FLUSH_ACTIVE);
-        write_size = 0;
+        _write_size = 0;
 #if defined (ZMQ_GREEDY_MSG_CLUBBING)
         goto check_for_more;
 #endif
@@ -91,273 +90,105 @@ check_for_more:
         // NORM stream buffer full, wait for NORM_TX_QUEUE_VACANCY.
         //
 
-        write_size = (write_size - nbytes);
+        _write_size = (_write_size - bytes_written);
         norm_tx_ready = false;
     }
 }
 
 void zmq::norm_engine2_t::recv_data (NormObjectHandle object)
 {
-#if 0
-    if (NORM_OBJECT_INVALID != object) {
-        //
-        // Call result of NORM_RX_OBJECT_UPDATED notification
-        // This is a rx_ready indication for a new or existing rx stream
-        // First, determine if this is a stream we already know
-        //
+    PeerStreamState *peer_state =
+      (PeerStreamState *) NormObjectGetUserData (object);
 
-        zmq_assert (NORM_OBJECT_STREAM == NormObjectGetType (object));
-        //
-        // Since there can be multiple senders (publishers), we keep
-        // state for each separate rx stream.
-        //
+    if (!peer_state) {
+        peer_state = new (std::nothrow) PeerStreamState (zmq_session, _in_batch_size, _max_message_size);
+        alloc_assert (peer_state);
+        NormObjectSetUserData (object, peer_state);
+    }
 
-        NormRxStreamState *rxState =
-          (NormRxStreamState *) NormObjectGetUserData (object);
+    peer_state->ProcessInput (object);
+}
 
-        if (NULL == rxState) {
+int zmq::norm_engine2_t::PeerStreamState::ProcessInput (
+  NormObjectHandle object)
+{
+    while (true) {
+        _read_size = this->_in_batch_size;
+
+        if (NormStreamRead (object, (char *) _receive_buffer.get (),
+                            (unsigned int *) &_read_size)
+            && (_read_size >= sizeof (uint16_t))) {
+
+            unsigned char *bf = _receive_buffer.get ();
+
             //
-            // This is a new stream, so create rxState with zmq decoder, etc
+            // Read the offset of the fist message in the current packet.
             //
 
-            rxState = new (std::nothrow)
-              NormRxStreamState (object, options.maxmsgsize, options.zero_copy,
-                                 options.in_batch_size);
-            errno_assert (rxState);
+            uint16_t offset = get_uint16 (bf);
+            bf += sizeof (uint16_t);
+            _read_size -= sizeof (uint16_t);
 
-            if (!rxState->Init ()) {
-                errno_assert (false);
-                delete rxState;
-                return;
+            if (!_joined) {
+                //
+                // If there is no beginning of the message in current packet,
+                // ignore the data.
+                //
+
+                if (offset == 0xffff) {
+                    continue;
+                }
+
+                zmq_assert (offset <= _read_size);
+
+                //
+                // We have to move data to the beginning of the first message.
+                //
+
+                bf += offset;
+                _read_size -= offset;
+
+                //
+                // Mark the stream as joined.
+                //
+
+                _joined = true;
             }
 
-            NormObjectSetUserData (object, rxState);
-        } else if (!rxState->IsRxReady ()) {
-            //
-            // Existing non-ready stream, so remove from pending
-            // list to be promoted to rx_ready_list ...
-            //
+            while (_read_size > 0) {
+                //
+                // Finish decoding any partial message, or begin decoding a new one
+                //
 
-            rx_pending_list.Remove (*rxState);
-        }
+                size_t decoded_bytes = 0;
+                int rc = _decoder.decode (bf, _read_size, decoded_bytes);
 
-        if (!rxState->IsRxReady ()) {
-            //
-            // TBD - prepend up front for immediate service?
-            //
+                if (rc == -1) {
+                    return -1;
+                }
 
-            rxState->SetRxReady (true);
-            rx_ready_list.Append (*rxState);
+                bf += decoded_bytes;
+                _read_size -= decoded_bytes;
+
+                if (rc == 0) {
+                    break;
+                }
+
+                //
+                // Push the message in the session
+                //
+
+                rc = _session->push_msg (_decoder.msg ());
+
+                if (rc == -1) {
+                    errno_assert (errno == EAGAIN);
+                    return -1;
+                }
+            }
+        } else {
+            return 0;
         }
     }
-    //
-    // This loop repeats until we've read all data available from "rx ready" inbound streams
-    // and pushed any accumulated messages we can up to the zmq session.
-    //
-
-    while (!rx_ready_list.IsEmpty ()
-           || (zmq_input_ready && !msg_ready_list.IsEmpty ())) {
-        //
-        // Iterate through our rx_ready streams, reading data into the decoder
-        // (This services incoming "rx ready" streams in a round-robin fashion)
-        //
-
-        NormRxStreamState::List::Iterator rxIterator (rx_ready_list);
-        NormRxStreamState *rxState;
-
-        while (NULL != (rxState = rxIterator.GetNextItem ())) {
-            switch (rxState->Decode ()) {
-                case 1: // msg completed
-                    //
-                    // Complete message decoded, move this stream to msg_ready_list
-                    // to push the message up to the session below.  Note the stream
-                    // will be returned to the "rx_ready_list" after that's done
-                    //
-
-                    rx_ready_list.Remove (*rxState);
-                    msg_ready_list.Append (*rxState);
-                    continue;
-
-                case -1: // decoding error (shouldn't happen w/ NORM, but ...)
-                    //
-                    // We need to re-sync this stream (decoder buffer was reset)
-                    //
-
-                    rxState->SetSync (false);
-                    break;
-
-                default: // 0 - need more data
-                    break;
-            }
-
-            //
-            // Get more data from this stream
-            //
-
-            NormObjectHandle stream = rxState->GetStreamHandle ();
-
-            //
-            // First, make sure we're in sync ...
-            //
-
-            while (!rxState->InSync ()) {
-                //
-                // seek NORM message start
-                //
-
-                if (!NormStreamSeekMsgStart (stream)) {
-                    //
-                    // Need to wait for more data
-                    //
-
-                    break;
-                }
-
-                //
-                // read message 'flag' byte to see if this it's a 'final' frame
-                //
-
-                char syncFlag;
-                unsigned int numBytes = 1;
-
-                if (!NormStreamRead (stream, &syncFlag, &numBytes)) {
-                    //
-                    // broken stream (can happen on late-joining subscriber)
-                    //
-
-                    continue;
-                }
-
-                if (0 == numBytes) {
-                    //
-                    // This probably shouldn't happen either since we found msg start
-                    // Need to wait for more data
-                    //
-
-                    break;
-                }
-
-                if (0 == syncFlag) {
-                    rxState->SetSync (true);
-                }
-
-                //
-                // else keep seeking ...
-                //
-            } // end while(!rxState->InSync())
-
-            if (!rxState->InSync ()) {
-                //
-                // Need more data for this stream, so remove from "rx ready"
-                // list and iterate to next "rx ready" stream
-                //
-
-                rxState->SetRxReady (false);
-
-                //
-                // Move from rx_ready_list to rx_pending_list
-                //
-
-                rx_ready_list.Remove (*rxState);
-                rx_pending_list.Append (*rxState);
-                continue;
-            }
-
-            //
-            // Now we're actually ready to read data from the NORM stream to the zmq_decoder
-            // the underlying zmq_decoder->get_buffer() call sets how much is needed.
-            //
-
-            unsigned int numBytes = (unsigned int) rxState->GetBytesNeeded ();
-
-            if (!NormStreamRead (stream, rxState->AccessBuffer (), &numBytes)) {
-                //
-                // broken NORM stream, so re-sync
-                //
-
-                rxState->Init (); // TBD - check result
-
-                //
-                // This will retry syncing, and getting data from this stream
-                // since we don't increment the "it" iterator
-                //
-
-                continue;
-            }
-            rxState->IncrementBufferCount (numBytes);
-            if (0 == numBytes) {
-                //
-                // All the data available has been read
-                // Need to wait for NORM_RX_OBJECT_UPDATED for this stream
-                //
-
-                rxState->SetRxReady (false);
-
-                //
-                // Move from rx_ready_list to rx_pending_list
-                //
-
-                rx_ready_list.Remove (*rxState);
-                rx_pending_list.Append (*rxState);
-            }
-        } // end while(NULL != (rxState = iterator.GetNextItem()))
-
-        if (zmq_input_ready) {
-            //
-            // At this point, we've made a pass through the "rx_ready" stream list
-            // Now make a pass through the "msg_pending" list (if the zmq session
-            // ready for more input).  This may possibly return streams back to
-            // the "rx ready" stream list after their pending message is handled
-            //
-
-            NormRxStreamState::List::Iterator readyIterator (msg_ready_list);
-            NormRxStreamState *rxStateReady;
-
-            while (NULL != (rxStateReady = readyIterator.GetNextItem ())) {
-                msg_t *msg = rxStateReady->AccessMsg ();
-                int rc = zmq_session->push_msg (msg);
-
-                if (-1 == rc) {
-                    if (EAGAIN == errno) {
-                        //
-                        // need to wait until session calls "restart_input()"
-                        //
-
-                        zmq_input_ready = false;
-                        break;
-                    } else {
-                        //
-                        // session rejected message?
-                        // TBD - handle this better
-                        //
-
-                        zmq_assert (false);
-                    }
-                }
-
-                //
-                // else message was accepted.
-                //
-
-                msg_ready_list.Remove (*rxStateReady);
-
-                if (
-                  rxStateReady
-                    ->IsRxReady ()) { // Move back to "rx_ready" list to read more data
-                    rx_ready_list.Append (*rxStateReady);
-                } else { // Move back to "rx_pending" list until NORM_RX_OBJECT_UPDATED
-                    msg_ready_list.Append (*rxStateReady);
-                }
-            } // end while(NULL != (rxState = iterator.GetNextItem()))
-        }     // end if (zmq_input_ready)
-    } // end while ((!rx_ready_list.empty() || (zmq_input_ready && !msg_ready_list.empty()))
-
-    //
-    // Alert zmq of the messages we have pushed up
-    //
-
-    zmq_session->flush ();
-#endif
 }
 
 #endif // ZMQ_HAVE_NORM
