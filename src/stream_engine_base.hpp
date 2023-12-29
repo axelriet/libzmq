@@ -187,6 +187,8 @@ class stream_engine_base_t : public io_object_t, public i_engine
     //  when handshake is completed.
     bool _has_handshake_stage;
 
+    size_t _out_batch_size;
+
     ZMQ_NON_COPYABLE_NOR_MOVABLE (stream_engine_base_t)
 };
 }

@@ -6,6 +6,10 @@
 
 #include <stdlib.h>
 
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+#include <tbb/scalable_allocator.h>
+#endif
+
 #include "io_thread.hpp"
 #include "pgm_sender.hpp"
 #include "session_base.hpp"
@@ -29,7 +33,7 @@ zmq::pgm_sender_t::pgm_sender_t (io_thread_t *parent_,
     rdata_notify_handle (static_cast<handle_t> (NULL)),
     pending_notify_handle (static_cast<handle_t> (NULL)),
     out_buffer (NULL),
-    out_buffer_size (0),
+    _out_batch_size (0),
     write_size (0)
 {
     int rc = msg.init ();
@@ -38,12 +42,20 @@ zmq::pgm_sender_t::pgm_sender_t (io_thread_t *parent_,
 
 int zmq::pgm_sender_t::init (bool udp_encapsulation_, const char *network_)
 {
-    int rc = pgm_socket.init (udp_encapsulation_, network_);
-    if (rc != 0)
-        return rc;
+    const int rc = pgm_socket.init (udp_encapsulation_, network_);
 
-    out_buffer_size = pgm_socket.get_max_tsdu_size ();
-    out_buffer = (unsigned char *) std::malloc (out_buffer_size);
+    if (rc != 0) {
+        return rc;
+    }
+
+    _out_batch_size = pgm_socket.get_max_tsdu_size ();
+
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+    out_buffer = (unsigned char *) scalable_malloc (_out_batch_size);
+#else
+    out_buffer = (unsigned char *) std::malloc (_out_batch_size);
+#endif
+
     alloc_assert (out_buffer);
 
     return rc;
@@ -127,7 +139,11 @@ zmq::pgm_sender_t::~pgm_sender_t ()
     errno_assert (rc == 0);
 
     if (out_buffer) {
+#ifdef ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR
+        scalable_free (out_buffer);
+#else
         std::free (out_buffer);
+#endif
         out_buffer = NULL;
     }
 }
@@ -143,7 +159,7 @@ void zmq::pgm_sender_t::in_event ()
     pgm_socket.process_upstream ();
     if (errno == ENOMEM || errno == EBUSY) {
         const long timeout = pgm_socket.get_rx_timeout ();
-        if (timeout > 0) {
+        if (timeout >= 0) {
             add_timer (timeout, rx_timer_id);
             has_rx_timer = true;
         }
@@ -154,12 +170,17 @@ void zmq::pgm_sender_t::out_event ()
 {
     //  POLLOUT event from send socket. If write buffer is empty,
     //  try to read new data from the encoder.
-    if (write_size == 0) {
+
+    if (write_size == 0)
+    {
         //  First two bytes (sizeof uint16_t) are used to store message
         //  offset in following steps. Note that by passing our buffer to
         //  the get data function we prevent it from returning its own buffer.
+
+check_for_more:
+
         unsigned char *bf = out_buffer + sizeof (uint16_t);
-        size_t bfsz = out_buffer_size - sizeof (uint16_t);
+        size_t bfsz = _out_batch_size - sizeof (uint16_t);
         uint16_t offset = 0xffff;
 
         size_t bytes = encoder.encode (&bf, bfsz);
@@ -194,18 +215,21 @@ void zmq::pgm_sender_t::out_event ()
     }
 
     //  Send the data.
-    size_t nbytes = pgm_socket.send (out_buffer, write_size);
+    const size_t nbytes = pgm_socket.send (out_buffer, write_size);
 
     //  We can write either all data or 0 which means rate limit reached.
-    if (nbytes == write_size)
+    if (nbytes == write_size) {
         write_size = 0;
-    else {
+#if defined(ZMQ_GREEDY_MSG_CLUBBING)
+        goto check_for_more;
+#endif
+    } else {
         zmq_assert (nbytes == 0);
 
         if (errno == ENOMEM) {
             // Stop polling handle and wait for tx timeout
             const long timeout = pgm_socket.get_tx_timeout ();
-            if (timeout > 0) {
+            if (timeout >= 0) {
                 add_timer (timeout, tx_timer_id);
                 reset_pollout (handle);
                 has_tx_timer = true;

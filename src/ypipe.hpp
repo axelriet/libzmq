@@ -171,6 +171,8 @@ template <typename T, int N> class ypipe_t ZMQ_FINAL : public ypipe_base_t<T>
     //  atomic operations.
 
 #if defined(_MSC_VER)
+#pragma warning(                                                               \
+    disable : 4324) // structure was padded due to alignment specifier
     __declspec (align (ZMQ_CACHELINE_SIZE)) atomic_ptr_t<T> _c;
     unsigned char _padding[ZMQ_CACHELINE_SIZE - sizeof (atomic_ptr_t<T>)];
 #elif defined(__GNUC__) || defined(__INTEL_COMPILER)                           \

@@ -17,9 +17,10 @@ void zmq::norm_engine2_t::send_data ()
 {
     if (intermediate_buffer.get() == NULL) {
         intermediate_buffer.reset (
-          new (std::nothrow) unsigned char[INTERMEDIATE_BUFFER_SIZE_KB * 1024]);
+          new (std::nothrow) unsigned char[_out_batch_size]);
         alloc_assert (intermediate_buffer.get ());
     }
+
 
     if (write_size == 0) {
         //
@@ -28,8 +29,10 @@ void zmq::norm_engine2_t::send_data ()
         //  the get data function we prevent it from returning its own buffer.
         //
 
+check_for_more:
+
         unsigned char *bf = intermediate_buffer.get () + sizeof (uint16_t);
-        size_t bfsz = (INTERMEDIATE_BUFFER_SIZE_KB * 1024) - sizeof (uint16_t);
+        size_t bfsz = (_out_batch_size) - sizeof (uint16_t);
         uint16_t offset = 0xffff;
 
         size_t bytes = encoder.encode (&bf, bfsz);
@@ -80,7 +83,10 @@ void zmq::norm_engine2_t::send_data ()
 
         NormStreamFlush (norm_tx_stream, true, NORM_FLUSH_ACTIVE);
         write_size = 0;
-    }  else {
+#if defined (ZMQ_GREEDY_MSG_CLUBBING)
+        goto check_for_more;
+#endif
+    } else {
         //
         // NORM stream buffer full, wait for NORM_TX_QUEUE_VACANCY.
         //

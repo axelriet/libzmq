@@ -107,7 +107,8 @@ zmq::stream_engine_base_t::stream_engine_base_t (
     _io_error (false),
     _session (NULL),
     _socket (NULL),
-    _has_handshake_stage (has_handshake_stage_)
+    _has_handshake_stage (has_handshake_stage_),
+    _out_batch_size (0)
 {
     const int rc = _tx_msg.init ();
     errno_assert (rc == 0);
@@ -158,6 +159,8 @@ void zmq::stream_engine_base_t::plug (io_thread_t *io_thread_,
 {
     zmq_assert (!_plugged);
     _plugged = true;
+
+    _out_batch_size = _options.out_batch_size;
 
     //  Connect to session object.
     zmq_assert (!_session);
@@ -329,10 +332,12 @@ void zmq::stream_engine_base_t::out_event ()
             return;
         }
 
+check_for_more:
+
         _outpos = NULL;
         _outsize = _encoder->encode (&_outpos, 0);
 
-        while (_outsize < static_cast<size_t> (_options.out_batch_size)) {
+        while (_outsize < static_cast<size_t> (_out_batch_size)) {
             if ((this->*_next_msg) (&_tx_msg) == -1) {
                 //  ws_engine can cause an engine error and delete it, so
                 //  bail out immediately to avoid use-after-free
@@ -344,7 +349,7 @@ void zmq::stream_engine_base_t::out_event ()
             _encoder->load_msg (&_tx_msg);
             unsigned char *bufptr = _outpos + _outsize;
             const size_t n =
-              _encoder->encode (&bufptr, _options.out_batch_size - _outsize);
+              _encoder->encode (&bufptr, _out_batch_size - _outsize);
             zmq_assert (n > 0);
             if (_outpos == NULL)
                 _outpos = bufptr;
@@ -379,9 +384,15 @@ void zmq::stream_engine_base_t::out_event ()
 
     //  If we are still handshaking and there are no data
     //  to send, stop polling for output.
-    if (unlikely (_handshaking))
-        if (_outsize == 0)
+    if (unlikely (_handshaking)) {
+        if (_outsize == 0) {
             reset_pollout ();
+        }
+#if defined(ZMQ_GREEDY_MSG_CLUBBING)
+    } else if (_outsize == 0 && _encoder != NULL) {
+        goto check_for_more;
+#endif
+    }
 }
 
 void zmq::stream_engine_base_t::restart_output ()

@@ -32,7 +32,7 @@ class norm_engine_t : public io_object_t, public i_engine
     ~norm_engine_t ();
 
     // create NORM instance, session, etc
-    int init (const char *network_, bool send, bool recv);
+    virtual int init (const char *network_, bool send, bool recv);
     void shutdown ();
 
     bool has_handshake_stage () { return false; };
@@ -210,6 +210,15 @@ class norm_engine2_t : public norm_engine_t
     {
     }
 
+    virtual int init (const char *network_, bool send, bool recv) ZMQ_OVERRIDE
+    {
+        int result = norm_engine_t::init (network_, send, recv);
+
+        _out_batch_size = options.out_batch_size;
+
+        return result;
+    }
+
   private:
     //
     // Our message encoder.
@@ -239,12 +248,13 @@ class norm_engine2_t : public norm_engine_t
     // Intermediate buffer
     //
 
-    enum
-    {
-        INTERMEDIATE_BUFFER_SIZE_KB = 2048
-    };
-
     std::unique_ptr<uint8_t> intermediate_buffer;
+
+    //
+    // Intermediate buffer
+    //
+
+    size_t _out_batch_size;
 
     void send_data () ZMQ_OVERRIDE;
     void recv_data (NormObjectHandle stream) ZMQ_OVERRIDE;

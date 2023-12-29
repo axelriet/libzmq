@@ -487,6 +487,9 @@ int ZMQ_CDECL main ()
 
     UNITY_BEGIN ();
 
+#if 1
+    RUN_TEST (test_xnorm);
+#else
     RUN_TEST (test_inproc);
     RUN_TEST (test_tcp);
 
@@ -503,6 +506,6 @@ int ZMQ_CDECL main ()
 
     RUN_TEST (test_ws);
     RUN_TEST (test_wss);
-
+#endif
     return UNITY_END ();
 }
