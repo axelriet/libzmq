@@ -23,22 +23,24 @@ void zmq::norm_engine2_t::send_data ()
 
     if (_write_size == 0) {
         //
-        //  First two bytes (sizeof uint16_t) are used to store message
-        //  offset in following steps. Note that by passing our buffer to
-        //  the get data function we prevent it from returning its own buffer.
+        // A chunk starts with:
+        // 
+        //    uint32_t chunk size (total bytes in the chunk)
+        //    uint32_t offset of first message in the chunk
+        //    message data
         //
 
 check_for_more:
 
-        unsigned char *bf = _send_buffer.get () + sizeof (uint16_t);
-        const size_t bfsz = (_out_batch_size) - sizeof (uint16_t);
-        uint16_t offset = 0xffff;
+        uint32_t offset = 0xffffffff;
+        const size_t bfsz = (_out_batch_size) - (2 * sizeof (uint32_t));
+        unsigned char *bf = _send_buffer.get () + (2 * sizeof (uint32_t));
 
         size_t bytes = _encoder.encode (&bf, bfsz);
 
         while (bytes < bfsz) {
-            if (!_send_more && (offset == 0xffff)) {
-                offset = static_cast<uint16_t> (bytes);
+            if (!_send_more && (offset == 0xffffffff)) {
+                offset = static_cast<uint32_t> (bytes);
             }
 
             const int rc = zmq_session->pull_msg (&_outgoing_msg);
@@ -51,7 +53,7 @@ check_for_more:
             _send_more = (_outgoing_msg.flagsp () & msg_t::more) != 0;
             _encoder.load_msg (&_outgoing_msg);
 
-            bf = _send_buffer.get () + sizeof (uint16_t) + bytes;
+            bf = _send_buffer.get () + (2 * sizeof (uint32_t)) + bytes;
             bytes += _encoder.encode (&bf, bfsz - bytes);
         }
 
@@ -63,17 +65,18 @@ check_for_more:
             return;
         }
 
-        _write_size = sizeof (uint16_t) + bytes;
+        _write_size = (2 * sizeof (uint32_t)) + bytes;
 
         //
         //  Put offset information in the buffer.
         //
 
-        put_uint16 (_send_buffer.get (), offset);
+        put_uint32 (_send_buffer.get (), _write_size);
+        put_uint32 (_send_buffer.get () + sizeof (uint32_t), offset);
     }
 
     const size_t bytes_written = NormStreamWrite (
-      norm_tx_stream, reinterpret_cast<char *>(_send_buffer.get ()), _write_size);
+      norm_tx_stream, reinterpret_cast<char *>(_send_buffer.get ()), (unsigned int) _write_size);
 
     if (bytes_written == _write_size) {
         //
@@ -81,6 +84,7 @@ check_for_more:
         //
 
         NormStreamFlush (norm_tx_stream, true, NORM_FLUSH_ACTIVE);
+
         _write_size = 0;
 #if defined (ZMQ_GREEDY_MSG_CLUBBING)
         goto check_for_more;
@@ -90,7 +94,7 @@ check_for_more:
         // NORM stream buffer full, wait for NORM_TX_QUEUE_VACANCY.
         //
 
-        _write_size = (_write_size - bytes_written);
+        _write_size -= bytes_written;
         norm_tx_ready = false;
     }
 }
@@ -106,28 +110,66 @@ void zmq::norm_engine2_t::recv_data (NormObjectHandle object)
         NormObjectSetUserData (object, peer_state);
     }
 
-    peer_state->ProcessInput (object);
+    const int rc = peer_state->ProcessInput (object);
+
+    if (rc == -1) {
+        if (errno == EAGAIN) {
+            zmq_input_ready = false;
+        } else {
+            zmq_assert (false);
+        }
+    }
+
+    zmq_session->flush ();
 }
 
 int zmq::norm_engine2_t::PeerStreamState::ProcessInput (
   NormObjectHandle object)
 {
+    int rc;
+    uint16_t offset;
+    size_t decoded_bytes;
+
     while (true) {
-        _read_size = this->_in_batch_size;
+
+        if (_retry_push) {
+            _retry_push = false;
+            goto retry_push;
+        }
+
+        if (_chunk_size > 0) {
+            goto continue_chunk;
+        }
+
+        _read_size = _in_batch_size;
 
         if (NormStreamRead (object, (char *) _receive_buffer.get (),
-                            (unsigned int *) &_read_size)
-            && (_read_size >= sizeof (uint16_t))) {
+                            (unsigned int *) &_read_size)) {
 
-            unsigned char *bf = _receive_buffer.get ();
+            if (_read_size < (2 * sizeof (uint32_t))) {
+                if (_read_size == 0) {
+                    return 0;
+                }
+                zmq_assert (false);
+            }
+
+            _receive_pointer = _receive_buffer.get ();
+
+continue_chunk:
 
             //
-            // Read the offset of the fist message in the current packet.
+            // Read the chunk size and the offset of the fist message in the chunk.
             //
 
-            uint16_t offset = get_uint16 (bf);
-            bf += sizeof (uint16_t);
-            _read_size -= sizeof (uint16_t);
+            _chunk_size = get_uint32 (_receive_pointer);
+            _receive_pointer += sizeof (uint32_t);
+            _read_size -= sizeof (uint32_t);
+            _chunk_size -= sizeof (uint32_t);
+
+            offset = get_uint32 (_receive_pointer);
+            _receive_pointer += sizeof (uint32_t);
+            _read_size -= sizeof (uint32_t);
+            _chunk_size -= sizeof (uint32_t);
 
             if (!_joined) {
                 //
@@ -135,7 +177,7 @@ int zmq::norm_engine2_t::PeerStreamState::ProcessInput (
                 // ignore the data.
                 //
 
-                if (offset == 0xffff) {
+                if (offset == 0xffffffff) {
                     continue;
                 }
 
@@ -145,8 +187,11 @@ int zmq::norm_engine2_t::PeerStreamState::ProcessInput (
                 // We have to move data to the beginning of the first message.
                 //
 
-                bf += offset;
-                _read_size -= offset;
+                if (offset) {
+                    _receive_pointer += offset;
+                    _read_size -= offset;
+                    _chunk_size -= offset;
+                }
 
                 //
                 // Mark the stream as joined.
@@ -155,35 +200,51 @@ int zmq::norm_engine2_t::PeerStreamState::ProcessInput (
                 _joined = true;
             }
 
-            while (_read_size > 0) {
+            while (_read_size > 0 && _chunk_size > 0) {
                 //
                 // Finish decoding any partial message, or begin decoding a new one
                 //
 
-                size_t decoded_bytes = 0;
-                int rc = _decoder.decode (bf, _read_size, decoded_bytes);
+                decoded_bytes = 0;
+                rc = _decoder.decode (_receive_pointer, std::min(_read_size, _chunk_size), decoded_bytes);
 
                 if (rc == -1) {
+                    _joined = false;
                     return -1;
                 }
 
-                bf += decoded_bytes;
-                _read_size -= decoded_bytes;
+                if (decoded_bytes == 0) {
+                    break;
+                } else {
+                    _receive_pointer += decoded_bytes;
+                    _read_size -= decoded_bytes;
+                    _chunk_size -= decoded_bytes;
+                }
 
                 if (rc == 0) {
-                    break;
+                    //
+                    // Partial message
+                    //
+
+                    return 0;
                 }
 
                 //
-                // Push the message in the session
+                // Push the message to the session
                 //
 
+retry_push:     
                 rc = _session->push_msg (_decoder.msg ());
 
                 if (rc == -1) {
                     errno_assert (errno == EAGAIN);
+                    _retry_push = true;
                     return -1;
                 }
+            }
+
+            if (_read_size > _chunk_size) {
+                goto continue_chunk;
             }
         } else {
             return 0;

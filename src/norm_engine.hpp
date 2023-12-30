@@ -245,6 +245,9 @@ class norm_engine2_t : public norm_engine_t
         size_t _in_batch_size;
         msg_t _incoming_msg;
         std::unique_ptr<uint8_t> _receive_buffer;
+        unsigned char *_receive_pointer;
+        size_t _chunk_size;
+        bool _retry_push;
 
         PeerStreamState (session_base_t *session_,
                          size_t in_batch_size_,
@@ -254,7 +257,10 @@ class norm_engine2_t : public norm_engine_t
             _decoder (0, max_message_size_),
             _read_size (0),
             _receive_more (false),
-            _in_batch_size (in_batch_size_)
+            _in_batch_size (in_batch_size_),
+            _receive_pointer(NULL),
+            _chunk_size(0),
+            _retry_push(false)
         {
             _incoming_msg.init ();
             _receive_buffer.reset (

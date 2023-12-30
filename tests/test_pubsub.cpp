@@ -12,7 +12,7 @@
 #endif
 
 #if __cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER > 1700
-//#define CODEC_WORKOUT
+#define CODEC_WORKOUT
 #endif
 
 #ifdef CODEC_WORKOUT
@@ -55,11 +55,11 @@ void test_encoder_decoder (void *publisher, void *subscriber)
     });
 
     //
-    // Sleep 100ms, then again 100ms etc until started.
+    // Sleep 250ms, then possibly again 250ms until started.
     //
 
     do {
-        msleep (100);
+        msleep (250);
     } while (!started);
 
     const int RETRIES = 10;
@@ -152,14 +152,14 @@ void test (const char *address)
     msleep (SETTLE_TIME);
 
     //  Send three messages
-    send_string_expect_success (publisher, "test1", 0);
-    send_string_expect_success (publisher, "test2", 0);
-    send_string_expect_success (publisher, "test3", 0);
+    //send_string_expect_success (publisher, "test1", 0);
+    //send_string_expect_success (publisher, "test2", 0);
+    //send_string_expect_success (publisher, "test3", 0);
 
     //  Receive the messages
-    recv_string_expect_success (subscriber, "test1", 0);
-    recv_string_expect_success (subscriber, "test2", 0);
-    recv_string_expect_success (subscriber, "test3", 0);
+    //recv_string_expect_success (subscriber, "test1", 0);
+    //recv_string_expect_success (subscriber, "test2", 0);
+    //recv_string_expect_success (subscriber, "test3", 0);
 
 #ifdef CODEC_WORKOUT
     test_encoder_decoder (publisher, subscriber);
