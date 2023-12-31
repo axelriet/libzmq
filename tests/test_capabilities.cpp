@@ -63,10 +63,10 @@ void test_capabilities ()
 
 #if defined(ZMQ_HAVE_NORM)
     TEST_ASSERT_TRUE (zmq_has ("norm"));
-    TEST_ASSERT_TRUE (zmq_has ("xnorm"));
+    TEST_ASSERT_TRUE (zmq_has ("x-norm"));
 #else
     TEST_ASSERT_FALSE (zmq_has ("norm"));
-    TEST_ASSERT_FALSE (zmq_has ("xnorm"));
+    TEST_ASSERT_FALSE (zmq_has ("x-norm"));
 #endif
 
 #if defined(ZMQ_HAVE_VMCI)

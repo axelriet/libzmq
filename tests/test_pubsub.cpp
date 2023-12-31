@@ -105,7 +105,11 @@ void test_encoder_decoder (void *publisher, void *subscriber)
 
 #endif
 
-void test (const char *address)
+void test (const char *address
+#ifdef CODEC_WORKOUT
+           , bool workout = true
+#endif
+)
 {
     size_t len = MAX_SOCKET_STRING;
     char my_endpoint[MAX_SOCKET_STRING]{};
@@ -152,17 +156,19 @@ void test (const char *address)
     msleep (SETTLE_TIME);
 
     //  Send three messages
-    //send_string_expect_success (publisher, "test1", 0);
-    //send_string_expect_success (publisher, "test2", 0);
-    //send_string_expect_success (publisher, "test3", 0);
+    send_string_expect_success (publisher, "test1", 0);
+    send_string_expect_success (publisher, "test2", 0);
+    send_string_expect_success (publisher, "test3", 0);
 
     //  Receive the messages
-    //recv_string_expect_success (subscriber, "test1", 0);
-    //recv_string_expect_success (subscriber, "test2", 0);
-    //recv_string_expect_success (subscriber, "test3", 0);
+    recv_string_expect_success (subscriber, "test1", 0);
+    recv_string_expect_success (subscriber, "test2", 0);
+    recv_string_expect_success (subscriber, "test3", 0);
 
 #ifdef CODEC_WORKOUT
-    test_encoder_decoder (publisher, subscriber);
+    if (workout) {
+        test_encoder_decoder (publisher, subscriber);
+    }
 #endif
 
     //  Clean up.
@@ -173,7 +179,11 @@ void test (const char *address)
 void test_norm ()
 {
 #if defined ZMQ_HAVE_NORM
-    test ("norm://" PRIVATE_EXPERIMENT_MULTICAST ":6210");
+    test ("norm://" PRIVATE_EXPERIMENT_MULTICAST ":6210"
+#ifdef CODEC_WORKOUT
+          , false
+#endif
+    );
 #else
     TEST_IGNORE_MESSAGE ("libzmq without NORM, ignoring test.");
 #endif
@@ -182,7 +192,7 @@ void test_norm ()
 void test_xnorm ()
 {
 #if defined ZMQ_HAVE_NORM
-    test ("xnorm://" PRIVATE_EXPERIMENT_MULTICAST ":6211");
+    test ("x-norm://" PRIVATE_EXPERIMENT_MULTICAST ":6211");
 #else
     TEST_IGNORE_MESSAGE ("libzmq without NORM, ignoring test.");
 #endif
@@ -486,15 +496,6 @@ int ZMQ_CDECL main ()
     setup_test_environment ();
 
     UNITY_BEGIN ();
-
-
-
-RUN_TEST (test_xnorm);
-
-
-
-
-
 
     RUN_TEST (test_inproc);
     RUN_TEST (test_tcp);

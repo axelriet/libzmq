@@ -440,20 +440,10 @@ void zmq::norm_engine_t::in_event ()
             recv_data (event.object);
             break;
 
-        case NORM_RX_OBJECT_ABORTED: {
-            NormRxStreamState *rxState =
-              (NormRxStreamState *) NormObjectGetUserData (event.object);
-            if (NULL != rxState) {
-                // Remove the state from the list it's in
-                // This is now unnecessary since deletion takes care of list removal
-                // but in the interest of being clear ...
-                NormRxStreamState::List *list = rxState->AccessList ();
-                if (NULL != list)
-                    list->Remove (*rxState);
-            }
-            delete rxState;
+        case NORM_RX_OBJECT_ABORTED:
+            object_aborted (event.object);
             break;
-        }
+
         case NORM_REMOTE_SENDER_INACTIVE:
             // Here we free resources used for this formerly active sender.
             // Note w/ NORM_SYNC_STREAM, if sender reactivates, we may
@@ -482,6 +472,23 @@ bool zmq::norm_engine_t::restart_input ()
 
     return true;
 } // end zmq::norm_engine_t::restart_input()
+
+void zmq::norm_engine_t::object_aborted (NormObjectHandle object)
+{
+    NormRxStreamState *rxState =
+      (NormRxStreamState *) NormObjectGetUserData (object);
+
+    if (NULL != rxState) {
+        // Remove the state from the list it's in
+        // This is now unnecessary since deletion takes care of list removal
+        // but in the interest of being clear ...
+        NormRxStreamState::List *list = rxState->AccessList ();
+        if (NULL != list)
+            list->Remove (*rxState);
+    }
+
+    delete rxState;
+}
 
 void zmq::norm_engine_t::recv_data (NormObjectHandle object)
 {

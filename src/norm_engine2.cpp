@@ -123,6 +123,17 @@ void zmq::norm_engine2_t::recv_data (NormObjectHandle object)
     zmq_session->flush ();
 }
 
+void zmq::norm_engine2_t::object_aborted (NormObjectHandle object)
+{
+    PeerStreamState *peer_state =
+      (PeerStreamState *) NormObjectGetUserData (object);
+
+    if (peer_state) {
+        delete peer_state;
+        NormObjectSetUserData (object, NULL);
+    }
+}
+
 int zmq::norm_engine2_t::PeerStreamState::ProcessInput (
   NormObjectHandle object)
 {
@@ -147,10 +158,8 @@ int zmq::norm_engine2_t::PeerStreamState::ProcessInput (
                             (unsigned int *) &_read_size)) {
 
             if (_read_size < (2 * sizeof (uint32_t))) {
-                if (_read_size == 0) {
-                    return 0;
-                }
-                zmq_assert (false);
+                _joined = false;
+                return 0;
             }
 
             _receive_pointer = _receive_buffer.get ();
