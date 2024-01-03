@@ -315,22 +315,50 @@ class msg_t
         atomic_counter_t refcnt;
     };
 
-    union group_t
+#pragma pack(1) // MSVC, gcc-5.5.0, and clang supports this syntax
+
+    //
+    // The group_t structure is 12 bytes long, with the
+    // content pointer aligned to the end. When embedded
+    // into the msg_t structure, the content pointer is
+    // properly 4- or 8-aligned depending on the arch.
+    // 
+    // With the short group name reduced from 15 to 11 bytes,
+    // the vsm threshold is increased from 33 to 37 bytes
+    // without breaking binary compatibility with existing
+    // compiled clients and bindings.
+    // 
+    // To take maximum advantage of the vsm increase, group
+    // names should be kept short, ideally 10 characters or
+    // less as to avoid an external allocation.
+    // 
+    // 1-packing is necessary.
+    //
+
+    struct group_t
     {
         unsigned char type;
 
-        struct
+        union
         {
-            unsigned char type;
-            char group[15]; // This could be reduced to increase the VSM size
-        } sgroup;
+            struct
+            {
+                char group[11];
+            } sgroup;
 
-        struct
-        {
-            unsigned char type;
-            long_group_t *content;
-        } lgroup;
+            struct
+            {
+#if (INTPTR_MAX == INT32_MAX)
+                char padding[7];
+#else
+                char padding[3];
+#endif
+                long_group_t *content;
+            } lgroup;
+        };
     };
+
+#pragma pack()
 
     //  Size in bytes of the largest message that is still copied around
     //  rather than being reference-counted.

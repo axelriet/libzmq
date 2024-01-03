@@ -449,7 +449,11 @@ int zmq::msg_t::close ()
             //  We used "placement new" operator to initialize the reference
             //  counter so we call the destructor explicitly now.
             _u.base.group.lgroup.content->refcnt.~atomic_counter_t ();
+#if defined(ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR)
+            scalable_free (_u.base.group.lgroup.content);
+#else
             std::free (_u.base.group.lgroup.content);
+#endif
             _u.base.group.lgroup.content = NULL;
         }
     }
@@ -727,9 +731,13 @@ int zmq::msg_t::set_group (_In_reads_ (length_) const char *group_,
     }
 
     if (length_ > (sizeof (group_t::sgroup.group) - 1)) {
-        _u.base.group.lgroup.type = group_type_long;
+        _u.base.group.type = group_type_long;
         _u.base.group.lgroup.content =
+#if defined(ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR)
+          (long_group_t *) scalable_malloc (sizeof (long_group_t));
+#else
           (long_group_t *) std::malloc (sizeof (long_group_t));
+#endif
         assert (_u.base.group.lgroup.content);
         new (&_u.base.group.lgroup.content->refcnt) zmq::atomic_counter_t ();
         _u.base.group.lgroup.content->refcnt.set (1);
