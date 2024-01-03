@@ -72,8 +72,10 @@ void zmq::xsub_t::xhiccuped (pipe_t *pipe_)
 }
 
 int zmq::xsub_t::xsetsockopt (int option_,
-                              const void *optval_,
-                              size_t optvallen_)
+                              _In_reads_bytes_opt_ (optvallen_)
+                                const void *optval_,
+                              _When_ (optval_ == NULL, _In_range_ (0, 0))
+                                const size_t optvallen_)
 {
     if (option_ == ZMQ_ONLY_FIRST_SUBSCRIBE) {
         if (optvallen_ != sizeof (int)
