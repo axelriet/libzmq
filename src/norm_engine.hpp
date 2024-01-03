@@ -68,6 +68,7 @@ class norm_engine_t : public io_object_t, public i_engine
     virtual void send_data ();
     virtual void recv_data (NormObjectHandle stream);
     virtual void object_aborted (NormObjectHandle object);
+    virtual NormSyncPolicy get_sync_policy () { return NORM_SYNC_STREAM; }
 
     enum
     {
@@ -274,6 +275,7 @@ class norm_engine2_t : public norm_engine_t
     void send_data () ZMQ_OVERRIDE;
     void recv_data (NormObjectHandle stream) ZMQ_OVERRIDE;
     void object_aborted (NormObjectHandle object) ZMQ_OVERRIDE;
+    NormSyncPolicy get_sync_policy () ZMQ_OVERRIDE { return NORM_SYNC_CURRENT; }
 };
 
 }

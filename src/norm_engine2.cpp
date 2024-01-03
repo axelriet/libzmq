@@ -11,7 +11,6 @@
 #endif
 
 #include "session_base.hpp"
-#include "v2_protocol.hpp"
 
 void zmq::norm_engine2_t::send_data ()
 {
@@ -20,6 +19,8 @@ void zmq::norm_engine2_t::send_data ()
           new (std::nothrow) unsigned char[_out_batch_size]);
         alloc_assert (_send_buffer.get ());
     }
+
+    unsigned char * const send_buffer = _send_buffer.get ();
 
     if (_write_size == 0) {
         //
@@ -33,8 +34,8 @@ void zmq::norm_engine2_t::send_data ()
 check_for_more:
 
         uint32_t offset = 0xffffffff;
+        unsigned char *bf = send_buffer + (2 * sizeof (uint32_t));
         const size_t bfsz = (_out_batch_size) - (2 * sizeof (uint32_t));
-        unsigned char *bf = _send_buffer.get () + (2 * sizeof (uint32_t));
 
         size_t bytes = _encoder.encode (&bf, bfsz);
 
@@ -53,7 +54,7 @@ check_for_more:
             _send_more = (_outgoing_msg.flagsp () & msg_t::more) != 0;
             _encoder.load_msg (&_outgoing_msg);
 
-            bf = _send_buffer.get () + (2 * sizeof (uint32_t)) + bytes;
+            bf = send_buffer + (2 * sizeof (uint32_t)) + bytes;
             bytes += _encoder.encode (&bf, bfsz - bytes);
         }
 
@@ -71,16 +72,18 @@ check_for_more:
         //  Put offset information in the buffer.
         //
 
-        put_uint32 (_send_buffer.get (), _write_size);
-        put_uint32 (_send_buffer.get () + sizeof (uint32_t), offset);
+        put_uint32 (send_buffer, (uint32_t) _write_size);
+        put_uint32 (send_buffer + sizeof (uint32_t), offset);
     }
 
-    const size_t bytes_written = NormStreamWrite (
-      norm_tx_stream, reinterpret_cast<char *>(_send_buffer.get ()), (unsigned int) _write_size);
+    const size_t bytes_written =
+      NormStreamWrite (norm_tx_stream, reinterpret_cast<char *> (send_buffer),
+                       (unsigned int) _write_size);
 
     if (bytes_written == _write_size) {
         //
-        // The whole chunk of clubbed messages was written, flush the stream.
+        // The whole chunk of clubbed messages was written, mark
+        // eom and flush the stream.
         //
 
         NormStreamFlush (norm_tx_stream, true, NORM_FLUSH_ACTIVE);
@@ -138,7 +141,7 @@ int zmq::norm_engine2_t::PeerStreamState::ProcessInput (
   NormObjectHandle object)
 {
     int rc;
-    uint16_t offset;
+    uint32_t offset;
     size_t decoded_bytes;
 
     while (true) {
@@ -157,8 +160,7 @@ int zmq::norm_engine2_t::PeerStreamState::ProcessInput (
         if (NormStreamRead (object, (char *) _receive_buffer.get (),
                             (unsigned int *) &_read_size)) {
 
-            if (_read_size < (2 * sizeof (uint32_t))) {
-                _joined = false;
+            if (_read_size == 0) {
                 return 0;
             }
 

@@ -167,7 +167,7 @@ int zmq::norm_engine_t::init (const char *network_, bool send, bool recv)
         // The alternative NORM_SYNC_CURRENT here would provide "instant"
         // receiver sync to the sender's _current_ message transmission.
         // NORM_SYNC_STREAM tries to get everything the sender has cached/buffered
-        NormSetDefaultSyncPolicy (norm_session, NORM_SYNC_STREAM);
+        NormSetDefaultSyncPolicy (norm_session, get_sync_policy());
         if (!NormStartReceiver (
               norm_session, (unsigned long) options.norm_buffer_size * 1024)) {
             // errno set by whatever failed
