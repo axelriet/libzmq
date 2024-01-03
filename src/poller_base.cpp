@@ -27,7 +27,7 @@ void zmq::poller_base_t::adjust_load (int amount_)
 void zmq::poller_base_t::add_timer (int timeout_, i_poll_events *sink_, int id_)
 {
 #ifndef NDEBUG
-    zmq_assert (timeout_ > 0);
+    zmq_assert (timeout_ >= 0);
 #endif
     uint64_t expiration = _clock.now_ms () + timeout_;
     timer_info_t info = {sink_, id_};

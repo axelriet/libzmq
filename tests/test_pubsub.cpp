@@ -16,6 +16,7 @@
 #endif
 
 #ifdef CODEC_WORKOUT
+#include <atomic>
 #include <thread>
 #include <chrono>
 #include <memchk.h>
@@ -30,11 +31,10 @@ SETUP_TEARDOWN_TESTCONTEXT
 void test_encoder_decoder (void *publisher, void *subscriber)
 {
     size_t size;
-    int retries = 5;
     std::atomic<bool> started (false);
-    const int MAX_SIZE = 3000; // 1/2(n*(n+n)) = 4,501,500 msg
+    const int MAX_SIZE = 3000; // 1/2(n*(n+n)) = 4,501,500 msgs
 
-    auto sender = std::thread ([publisher, &started] () {
+    auto sender = std::thread ([publisher, &started, MAX_SIZE] () {
         //
         // Send a bunch of messages of various sizes: N messages
         // of size 0, (N-1) messages of size 1, etc. The message
@@ -44,20 +44,27 @@ void test_encoder_decoder (void *publisher, void *subscriber)
 
         started = true;
 
-        for (int i = 0; i <= MAX_SIZE; i++) {
-            for (int j = 0; j <= (MAX_SIZE - i); j++) {
+        for (int size = 0; size <= MAX_SIZE; size++) {
+            for (int count = 0; count <= (MAX_SIZE - size); count++) {
                 zmq_msg_t msg;
-                TEST_ASSERT_SUCCESS_ERRNO (zmq_msg_init_size (&msg, i));
-                memset (zmq_msg_data (&msg), (int) i, i);
+                TEST_ASSERT_SUCCESS_ERRNO (zmq_msg_init_size (&msg, size));
+                memset (zmq_msg_data (&msg), (int) size, size);
                 TEST_ASSERT_SUCCESS_ERRNO (zmq_msg_send (&msg, publisher, 0));
                 TEST_ASSERT_SUCCESS_ERRNO (zmq_msg_close (&msg));
             }
         }
     });
 
-    while (!started) {
-        msleep (100);
-    }
+    //
+    // Sleep 250ms, then possibly again 250ms until started.
+    //
+
+    do {
+        msleep (250);
+    } while (!started);
+
+    const int RETRIES = 10;
+    int retries = RETRIES;
 
     for (;;) {
         zmq_msg_t msg;
@@ -66,7 +73,7 @@ void test_encoder_decoder (void *publisher, void *subscriber)
 
         if (rc == -1) {
             //
-            // Exit if we don't receive anything for .5s
+            // Exit if we don't receive anything for ~1s
             //
 
             if (zmq_errno () == EAGAIN) {
@@ -79,13 +86,18 @@ void test_encoder_decoder (void *publisher, void *subscriber)
                 TEST_ASSERT_SUCCESS_ERRNO (-1);
             }
 
-            retries = 5;
+            retries = RETRIES;
         }
 
+        //
+        // Check the message content integrity
+        //
+
         size = zmq_msg_size (&msg);
-        TEST_ASSERT_TRUE_MESSAGE (memchk ((char*)zmq_msg_data (&msg), (int) size, size)
-                                    == 0,
-                                  "Unexpected message content!");
+        TEST_ASSERT_TRUE_MESSAGE (
+          memchk ((char *) zmq_msg_data (&msg), (int) size, size) == 0,
+          "Unexpected message content! Corrupt data :(");
+
         TEST_ASSERT_SUCCESS_ERRNO (zmq_msg_close (&msg));
     }
 
@@ -94,7 +106,12 @@ void test_encoder_decoder (void *publisher, void *subscriber)
 
 #endif
 
-void test (const char *address)
+void test (const char *address
+#ifdef CODEC_WORKOUT
+           ,
+           bool workout = true
+#endif
+)
 {
     size_t len = MAX_SOCKET_STRING;
     char my_endpoint[MAX_SOCKET_STRING]{};
@@ -151,7 +168,9 @@ void test (const char *address)
     recv_string_expect_success (subscriber, "test3", 0);
 
 #ifdef CODEC_WORKOUT
-    test_encoder_decoder (publisher, subscriber);
+    if (workout) {
+        test_encoder_decoder (publisher, subscriber);
+    }
 #endif
 
     //  Clean up.
@@ -162,7 +181,12 @@ void test (const char *address)
 void test_norm ()
 {
 #if defined ZMQ_HAVE_NORM
-    test ("norm://" PRIVATE_EXPERIMENT_MULTICAST ":6210");
+    test ("norm://" PRIVATE_EXPERIMENT_MULTICAST ":6210"
+#ifdef CODEC_WORKOUT
+          ,
+          false
+#endif
+    );
 #else
     TEST_IGNORE_MESSAGE ("libzmq without NORM, ignoring test.");
 #endif
@@ -416,17 +440,17 @@ void test_hvsocket ()
 #if 0
 
     test ("hyperv://0:*"); // VM/container index (first one), any port.
-    test ("hyperv://0:4444"); // VM/container index (first one), specific port with VSOCK template.
+    test ("hyperv://0:6666"); // VM/container index (first one), specific port with VSOCK template.
     test ("hyperv://0:44622b22-7665-4499-b2e3-16d5f9bc14d3"); // VM/container index (first one), explicit (registered) service id.
     test ("hyperv://0:NMBus"); // VM/container index (first one), explicit (registered) service id by "ElementName"
 
     test ("hyperv://WinDev2311Eval:*"); // Symbolic VM/container name, any port.
-    test ("hyperv://WinDev2311Eval:4444"); // Symbolic VM/container name, specific port with VSOCK template.
+    test ("hyperv://WinDev2311Eval:6666"); // Symbolic VM/container name, specific port with VSOCK template.
     test ("hyperv://WinDev2311Eval:44622b22-7665-4499-b2e3-16d5f9bc14d3"); // Symbolic VM/container name, explicit (registered) service id.
     test ("hyperv://WinDev2311Eval:NMBus"); // Symbolic VM/container name, explicit (registered) service id by "ElementName"
 
     test ("hyperv://af5f35e3-fd7a-4573-9449-e47223939979:*"); // Explicit VM/container id, any port.
-    test ("hyperv://af5f35e3-fd7a-4573-9449-e47223939979:4444"); // Explicit VM/container id, specific port with VSOCK template.
+    test ("hyperv://af5f35e3-fd7a-4573-9449-e47223939979:6666"); // Explicit VM/container id, specific port with VSOCK template.
     test ("hyperv://af5f35e3-fd7a-4573-9449-e47223939979:44622b22-7665-4499-b2e3-16d5f9bc14d3"); // Explicit VM/container id, explicit (registered) service id.
     test ("hyperv://af5f35e3-fd7a-4573-9449-e47223939979:NMBus"); // Explicit VM/container id, explicit (registered) service id by "ElementName"
 

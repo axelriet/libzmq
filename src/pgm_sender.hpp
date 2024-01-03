@@ -65,7 +65,7 @@ class pgm_sender_t ZMQ_FINAL : public io_object_t, public i_engine
     msg_t msg;
 
     //  Keeps track of message boundaries.
-    bool more_flag;
+    bool more;
 
     //  PGM socket.
     pgm_socket_t pgm_socket;
@@ -83,7 +83,7 @@ class pgm_sender_t ZMQ_FINAL : public io_object_t, public i_engine
     unsigned char *out_buffer;
 
     //  Output buffer size.
-    size_t out_buffer_size;
+    size_t _out_batch_size;
 
     //  Number of bytes in the buffer to be written to the socket.
     //  If zero, there are no data to be sent.

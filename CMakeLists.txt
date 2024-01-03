@@ -151,6 +151,7 @@ option(WITH_HVSOCKET "Build with support for Microsoft Hyper-V (host<->guests so
 option(WITH_VSOCK "Build with support for VSOCK (hvsocket, virtio, vmci) (host<->guests sockets)" OFF)
 option(WITH_CUSTOM_MESSAGE_ALLOCATOR "Build with support for custom message allocators" OFF)
 option(WITH_TBB_SCALABLE_ALLOCATOR "Build with support for Intel's TBB scalable memory allocator" OFF)
+option(WITH_GREEDY_MSG_CLUBBING "Build with greedy message clubbing" OFF)
 
 if(APPLE)
   option(ZMQ_BUILD_FRAMEWORK "Build as OS X framework" OFF)
@@ -1226,6 +1227,11 @@ endif()
 if(ZMQ_HAVE_TIPC)
   message(STATUS "Building with optional TIPC transport adapter.")
   list(APPEND cxx-sources tipc_address.cpp tipc_address.hpp tipc_connecter.cpp tipc_connecter.hpp tipc_listener.cpp tipc_listener.hpp)
+endif()
+
+if(WITH_GREEDY_MSG_CLUBBING)
+  message(STATUS "Building with greedy message clubbing.")
+  set(ZMQ_GREEDY_MSG_CLUBBING 1)
 endif()
 
 # -----------------------------------------------------------------------------

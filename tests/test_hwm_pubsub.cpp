@@ -334,6 +334,9 @@ DEFINE_REGULAR_TEST_CASES (vsock, "vsock://2:2223")
 #if defined ZMQ_HAVE_HVSOCKET
 DEFINE_REGULAR_TEST_CASES (hyperv, "hyperv://loopback:3334")
 #endif
+#if defined ZMQ_HAVE_NORM
+DEFINE_REGULAR_TEST_CASES (norm, "norm://" PRIVATE_EXPERIMENT_MULTICAST ":6310")
+#endif
 
 int ZMQ_CDECL main ()
 {
@@ -362,6 +365,9 @@ int ZMQ_CDECL main ()
 #endif
 #if defined ZMQ_HAVE_HVSOCKET
     RUN_REGULAR_TEST_CASES (hyperv);
+#endif
+#if defined ZMQ_HAVE_NORM
+    RUN_REGULAR_TEST_CASES (norm);
 #endif
 
     RUN_TEST (test_reset_hwm);
