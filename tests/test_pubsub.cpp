@@ -16,6 +16,7 @@
 #endif
 
 #ifdef CODEC_WORKOUT
+#include <atomic>
 #include <thread>
 #include <chrono>
 #include <memchk.h>
@@ -33,7 +34,7 @@ void test_encoder_decoder (void *publisher, void *subscriber)
     std::atomic<bool> started (false);
     const int MAX_SIZE = 3000; // 1/2(n*(n+n)) = 4,501,500 msgs
 
-    auto sender = std::thread ([publisher, &started] () {
+    auto sender = std::thread ([publisher, &started, MAX_SIZE] () {
         //
         // Send a bunch of messages of various sizes: N messages
         // of size 0, (N-1) messages of size 1, etc. The message

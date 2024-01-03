@@ -332,7 +332,9 @@ void zmq::stream_engine_base_t::out_event ()
             return;
         }
 
-check_for_more:
+#if defined(ZMQ_GREEDY_MSG_CLUBBING)
+    check_for_more:
+#endif
 
         _outpos = NULL;
         _outsize = _encoder->encode (&_outpos, 0);

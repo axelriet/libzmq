@@ -171,13 +171,14 @@ void zmq::pgm_sender_t::out_event ()
     //  POLLOUT event from send socket. If write buffer is empty,
     //  try to read new data from the encoder.
 
-    if (write_size == 0)
-    {
+    if (write_size == 0) {
         //  First two bytes (sizeof uint16_t) are used to store message
         //  offset in following steps. Note that by passing our buffer to
         //  the get data function we prevent it from returning its own buffer.
 
-check_for_more:
+#if defined(ZMQ_GREEDY_MSG_CLUBBING)
+    check_for_more:
+#endif
 
         unsigned char *bf = out_buffer + sizeof (uint16_t);
         size_t bfsz = _out_batch_size - sizeof (uint16_t);

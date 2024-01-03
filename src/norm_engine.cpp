@@ -106,7 +106,12 @@ int zmq::norm_engine_t::init (const char *network_, bool send, bool recv)
     strncpy (addr, addrPtr, addrLen);
     addr[addrLen] = '\0';
     portPtr++;
-    unsigned short portNumber = atoi (portPtr);
+    const int portNumber = atoi (portPtr);
+
+    if (portNumber <= 0 || portNumber > 65535) {
+        errno = EINVAL;
+        return -1;
+    }
 
     if (NORM_INSTANCE_INVALID == norm_instance) {
         if (NORM_INSTANCE_INVALID == (norm_instance = NormCreateInstance ())) {
@@ -122,7 +127,7 @@ int zmq::norm_engine_t::init (const char *network_, bool send, bool recv)
     //       c) Randomize and implement a NORM session layer
     //          conflict detection/resolution protocol
 
-    norm_session = NormCreateSession (norm_instance, addr, portNumber, localId);
+    norm_session = NormCreateSession (norm_instance, addr, (UINT16) portNumber, localId);
     if (NORM_SESSION_INVALID == norm_session) {
         int savedErrno = errno;
         NormDestroyInstance (norm_instance);
@@ -133,7 +138,11 @@ int zmq::norm_engine_t::init (const char *network_, bool send, bool recv)
     // There's many other useful NORM options that could be applied here
     if (!NormIsUnicastAddress (addr)) {
         // These only apply for multicast sessions
-        NormSetTTL (norm_session, options.multicast_hops);
+        if (options.multicast_hops <= 0 && options.multicast_hops > 255) {
+            errno = EINVAL;
+            return -1;
+        }
+        NormSetTTL (norm_session, (unsigned char) options.multicast_hops);
         NormSetRxPortReuse (
           norm_session,
           true); // port reuse doesn't work for non-connected unicast
@@ -153,14 +162,14 @@ int zmq::norm_engine_t::init (const char *network_, bool send, bool recv)
          || options.norm_mode == ZMQ_NORM_CCE_ECNONLY)
         && (options.tos % 4 == 0)) {
         // ECN Capable Transport not set, so set it
-        NormSetTOS (norm_session, options.tos + 1);
+        NormSetTOS (norm_session, (unsigned char) (options.tos + 1));
     } else if ((options.norm_mode == ZMQ_NORM_CCE
                 || options.norm_mode == ZMQ_NORM_CCE_ECNONLY)
                && (options.tos % 4 == 3)) {
         // Congestion Experienced is an invalid setting, remove one of the bits
-        NormSetTOS (norm_session, options.tos - 1);
+        NormSetTOS (norm_session, (unsigned char) (options.tos - 1));
     } else {
-        NormSetTOS (norm_session, options.tos);
+        NormSetTOS (norm_session, (unsigned char) options.tos);
     }
 
     if (recv) {
@@ -184,19 +193,21 @@ int zmq::norm_engine_t::init (const char *network_, bool send, bool recv)
     if (send) {
         // Handle invalid settings -- num_parity must be >= num_autoparity (which has a default of 0)
         unsigned char numparity =
-          (options.norm_num_parity >= options.norm_num_autoparity
-             ? options.norm_num_parity
-             : options.norm_num_autoparity);
+          (unsigned char) (options.norm_num_parity
+                               >= options.norm_num_autoparity
+                             ? options.norm_num_parity
+                             : options.norm_num_autoparity);
         // Handle invalid settings -- block size must be > effective num_parity (which is <255)
         unsigned char blocksize =
-          (options.norm_block_size > numparity ? options.norm_block_size
-                                               : numparity + 1);
+          (unsigned char) (options.norm_block_size > numparity
+                             ? options.norm_block_size
+                             : numparity + 1);
         // Pick a random sender instance id (aka norm sender session id)
         NormSessionId instanceId = NormGetRandomSessionId ();
         // TBD - provide "options" for some NORM sender parameters
         if (!NormStartSender (norm_session, instanceId,
                               (unsigned long) options.norm_buffer_size * 1024,
-                              options.norm_segment_size, blocksize,
+                              (UINT16) options.norm_segment_size, blocksize,
                               numparity)) {
             // errno set by whatever failed
             int savedErrno = errno;
@@ -221,7 +232,8 @@ int zmq::norm_engine_t::init (const char *network_, bool send, bool recv)
             }
         }
         if (options.norm_num_autoparity > 0) {
-            NormSetAutoParity (norm_session, options.norm_num_autoparity);
+            NormSetAutoParity (norm_session,
+                               (unsigned char) options.norm_num_autoparity);
         }
         norm_tx_ready = true;
         is_sender = true;
@@ -276,7 +288,7 @@ void zmq::norm_engine_t::shutdown ()
     }
 } // end zmq::norm_engine_t::shutdown()
 
-void zmq::norm_engine_t::plug (io_thread_t *io_thread_,
+void zmq::norm_engine_t::plug (io_thread_t * /*io_thread_*/,
                                session_base_t *session_)
 {
 #ifdef ZMQ_USE_NORM_SOCKET_WRAPPER
@@ -352,7 +364,8 @@ void zmq::norm_engine_t::send_data ()
             // Get more data from encoder
             size_t space = BUFFER_SIZE;
             unsigned char *bufPtr = (unsigned char *) tx_buffer;
-            tx_len = zmq_encoder.encode (&bufPtr, space);
+            tx_len =
+              (unsigned int) zmq_encoder.encode (&bufPtr, (unsigned int) space);
             if (0 == tx_len) {
                 if (tx_first_msg) {
                     // We don't need to mark eom/flush until a message is sent
@@ -383,14 +396,16 @@ void zmq::norm_engine_t::send_data ()
                 //      frame of a ZMQ message.
                 if (tx_more_bit)
                     tx_buffer[0] =
-                      (char) 0xff; // this is not first frame of message
+                      (unsigned char) 0xff; // this is not first frame of message
                 else
                     tx_buffer[0] = 0x00; // this is first frame of message
                 tx_more_bit = (0 != (tx_msg.flags () & msg_t::more));
                 // Go ahead an get a first chunk of the message
                 bufPtr++;
                 space--;
-                tx_len = 1 + zmq_encoder.encode (&bufPtr, space);
+                tx_len = (unsigned int) (1
+                                         + zmq_encoder.encode (
+                                           &bufPtr, (unsigned int) space));
                 tx_index = 0;
             }
         }
@@ -525,6 +540,9 @@ void zmq::norm_engine_t::recv_data (NormObjectHandle object)
             rx_ready_list.Append (*rxState);
         }
     }
+
+    NormRxStreamState *rxState;
+
     // This loop repeats until we've read all data available from "rx ready" inbound streams
     // and pushed any accumulated messages we can up to the zmq session.
     while (!rx_ready_list.IsEmpty ()
@@ -532,7 +550,6 @@ void zmq::norm_engine_t::recv_data (NormObjectHandle object)
         // Iterate through our rx_ready streams, reading data into the decoder
         // (This services incoming "rx ready" streams in a round-robin fashion)
         NormRxStreamState::List::Iterator iterator (rx_ready_list);
-        NormRxStreamState *rxState;
         while (NULL != (rxState = iterator.GetNextItem ())) {
             switch (rxState->Decode ()) {
                 case 1: // msg completed
@@ -587,7 +604,7 @@ void zmq::norm_engine_t::recv_data (NormObjectHandle object)
             }
             // Now we're actually ready to read data from the NORM stream to the zmq_decoder
             // the underlying zmq_decoder->get_buffer() call sets how much is needed.
-            unsigned int numBytes = rxState->GetBytesNeeded ();
+            unsigned int numBytes = (unsigned int) rxState->GetBytesNeeded ();
             if (!NormStreamRead (stream, rxState->AccessBuffer (), &numBytes)) {
                 // broken NORM stream, so re-sync
                 rxState->Init (); // TBD - check result
@@ -611,9 +628,9 @@ void zmq::norm_engine_t::recv_data (NormObjectHandle object)
             // Now make a pass through the "msg_pending" list (if the zmq session
             // ready for more input).  This may possibly return streams back to
             // the "rx ready" stream list after their pending message is handled
-            NormRxStreamState::List::Iterator iterator (msg_ready_list);
-            NormRxStreamState *rxState;
-            while (NULL != (rxState = iterator.GetNextItem ())) {
+            NormRxStreamState::List::Iterator msg_ready_list_iterator (
+              msg_ready_list);
+            while (NULL != (rxState = msg_ready_list_iterator.GetNextItem ())) {
                 msg_t *msg = rxState->AccessMsg ();
                 int rc = zmq_session->push_msg (msg);
                 if (-1 == rc) {
@@ -837,7 +854,7 @@ static UINT WINAPI normWrapperThread (LPVOID lpParam)
             // Process norm event
             if (!NormGetNextEvent (
                   norm_wrapper_thread_args->norm_instance_handle, &message)) {
-                exitCode = -1;
+                exitCode = (DWORD) -1;
                 break;
             }
             rc =
@@ -847,16 +864,16 @@ static UINT WINAPI normWrapperThread (LPVOID lpParam)
             // Check if message
         } else if (waitRc == WAIT_OBJECT_0 + 1) {
             // Exit if WM_QUIT is received otherwise do nothing
-            MSG message;
-            GetMessage (&message, 0, 0, 0);
-            if (message.message == WM_QUIT) {
+            MSG m;
+            GetMessage (&m, 0, 0, 0);
+            if (m.message == WM_QUIT) {
                 break;
             } else {
                 // do nothing
             }
             // Otherwise an error occurred
         } else {
-            exitCode = -1;
+            exitCode = (DWORD) -1;
             break;
         }
     }
