@@ -152,6 +152,7 @@ option(WITH_VSOCK "Build with support for VSOCK (hvsocket, virtio, vmci) (host<-
 option(WITH_CUSTOM_MESSAGE_ALLOCATOR "Build with support for custom message allocators" OFF)
 option(WITH_TBB_SCALABLE_ALLOCATOR "Build with support for Intel's TBB scalable memory allocator" OFF)
 option(WITH_GREEDY_MSG_CLUBBING "Build with greedy message clubbing" OFF)
+option(WITH_40_BYTES_VSM "Build with 40 bytes vsm and 7 character group names threshold" OFF)
 
 if(APPLE)
   option(ZMQ_BUILD_FRAMEWORK "Build as OS X framework" OFF)
@@ -1232,6 +1233,11 @@ endif()
 if(WITH_GREEDY_MSG_CLUBBING)
   message(STATUS "Building with greedy message clubbing.")
   set(ZMQ_GREEDY_MSG_CLUBBING 1)
+endif()
+
+if(WITH_40_BYTES_VSM)
+  message(STATUS "Building with 40 bytes vsm and 7 character group names threshold.")
+  set(ZMQ_40_BYTES_VSM 1)
 endif()
 
 # -----------------------------------------------------------------------------

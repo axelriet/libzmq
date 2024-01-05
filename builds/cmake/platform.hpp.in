@@ -74,6 +74,7 @@
 #cmakedefine ZMQ_HAVE_VSOCK
 #cmakedefine ZMQ_HAVE_HVSOCKET
 #cmakedefine ZMQ_GREEDY_MSG_CLUBBING
+#cmakedefine ZMQ_40_BYTES_VSM
 
 #cmakedefine ZMQ_HAVE_CUSTOM_ALLOCATOR
 #cmakedefine ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR

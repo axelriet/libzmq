@@ -7,7 +7,8 @@
 
 #ifdef ZMQ_HAVE_WINDOWS
 #include <ComputeCore.h>
-#pragma comment(lib, "ComputeCore")
+#pragma comment(lib, "delayimp")
+#pragma comment(lib, "computecore")
 const wchar_t GuestCommunicationServicesKeyPath[] =
   L"SOFTWARE\\Microsoft\\Windows "
   L"NT\\CurrentVersion\\Virtualization\\GuestCommunicationServices";

@@ -265,13 +265,20 @@ void test_ctx_option_preferred_sizes ()
     TEST_ASSERT_EQUAL_INT (-1, zmq_ctx_set (get_test_context (),
                                             ZMQ_PREFERRED_MAX_GROUP_NAME_LENGTH,
                                             0));
+#if defined(ZMQ_40_BYTES_VSM)
+#define SMALL_MESSAGE_SIZE 40
+#define GROUP_NAME_LENGTH 7
+#else
+#define SMALL_MESSAGE_SIZE 33
+#define GROUP_NAME_LENGTH 14
+#endif
 
     TEST_ASSERT_EQUAL_INT (
-      33,
+      SMALL_MESSAGE_SIZE,
       zmq_ctx_get (get_test_context (), ZMQ_PREFERRED_MAX_SMALL_MESSAGE_SIZE));
 
     TEST_ASSERT_EQUAL_INT (
-      14,
+      GROUP_NAME_LENGTH,
       zmq_ctx_get (get_test_context (), ZMQ_PREFERRED_MAX_GROUP_NAME_LENGTH));
 }
 

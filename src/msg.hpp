@@ -315,6 +315,50 @@ class msg_t
         atomic_counter_t refcnt;
     };
 
+#if defined(ZMQ_40_BYTES_VSM)
+#pragma pack(1) // MSVC, gcc-5.5.0, and clang supports this syntax
+
+    //
+    // The group_t structure is 9 bytes long, with the
+    // content pointer aligned to the end. When embedded
+    // into the msg_t structure, the content pointer is
+    // properly 4- or 8-aligned depending on the arch.
+    // 
+    // With the short group name reduced from 15 to 8 bytes,
+    // the vsm threshold is increased from 33 to 40 bytes
+    // without breaking binary compatibility with existing
+    // compiled clients and bindings.
+    // 
+    // To take maximum advantage of the vsm increase, group
+    // names should be kept short, ideally 7 characters or
+    // less as to avoid an external allocation, and the
+    // message payload should be 40 bytes or less.
+    // 
+    // 1-packing is necessary.
+    //
+
+    struct group_t
+    {
+        unsigned char type;
+
+        union
+        {
+            struct
+            {
+                char group[8];
+            } sgroup;
+
+            struct
+            {
+#if (INTPTR_MAX == INT32_MAX)
+                char padding[4];
+#endif
+                long_group_t *content;
+            } lgroup;
+        };
+    };
+#pragma pack()
+#else
     union group_t
     {
         unsigned char type;
@@ -322,7 +366,7 @@ class msg_t
         struct
         {
             unsigned char type;
-            char group[15]; // This could be reduced to increase the VSM size
+            char group[15];
         } sgroup;
 
         struct
@@ -331,6 +375,7 @@ class msg_t
             long_group_t *content;
         } lgroup;
     };
+#endif
 
     //  Size in bytes of the largest message that is still copied around
     //  rather than being reference-counted.
@@ -403,23 +448,23 @@ class msg_t
         struct
         {
             metadata_t *metadata;
+            uint32_t routing_id;
             unsigned char unused[msg_t_size
                                  - (sizeof (metadata_t *) + 2
                                     + sizeof (uint32_t) + sizeof (group_t))];
             unsigned char type;
             unsigned char flags;
-            uint32_t routing_id;
             group_t group;
         } base;
 
         struct
         {
             metadata_t *metadata;
+            uint32_t routing_id;
             unsigned char data[max_vsm_size];
             unsigned char size;
             unsigned char type;
             unsigned char flags;
-            uint32_t routing_id;
             group_t group;
         } vsm;
 
@@ -427,13 +472,13 @@ class msg_t
         {
             metadata_t *metadata;
             content_t *content;
+            uint32_t routing_id;
             unsigned char
               unused[msg_t_size
                      - (sizeof (metadata_t *) + sizeof (content_t *) + 2
                         + sizeof (uint32_t) + sizeof (group_t))];
             unsigned char type;
             unsigned char flags;
-            uint32_t routing_id;
             group_t group;
         } lmsg;
 
@@ -441,13 +486,13 @@ class msg_t
         {
             metadata_t *metadata;
             content_t *content;
+            uint32_t routing_id;
             unsigned char
               unused[msg_t_size
                      - (sizeof (metadata_t *) + sizeof (content_t *) + 2
                         + sizeof (uint32_t) + sizeof (group_t))];
             unsigned char type;
             unsigned char flags;
-            uint32_t routing_id;
             group_t group;
         } zclmsg;
 
@@ -456,25 +501,25 @@ class msg_t
             metadata_t *metadata;
             void *data;
             size_t size;
+            uint32_t routing_id;
             unsigned char unused[msg_t_size
                                  - (sizeof (metadata_t *) + sizeof (void *)
                                     + sizeof (size_t) + 2 + sizeof (uint32_t)
                                     + sizeof (group_t))];
             unsigned char type;
             unsigned char flags;
-            uint32_t routing_id;
             group_t group;
         } cmsg;
 
         struct
         {
             metadata_t *metadata;
+            uint32_t routing_id;
             unsigned char unused[msg_t_size
                                  - (sizeof (metadata_t *) + 2
                                     + sizeof (uint32_t) + sizeof (group_t))];
             unsigned char type;
             unsigned char flags;
-            uint32_t routing_id;
             group_t group;
         } delimiter;
     } _u;
