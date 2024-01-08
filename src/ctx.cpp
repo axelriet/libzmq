@@ -924,6 +924,13 @@ int zmq::ctx_t::get_hvsocket_socket_family () const
 }
 #endif
 
+#ifdef ZMQ_HAVE_SCTP
+int zmq::ctx_t::get_sctp_socket_family () const
+{
+    return AF_INET;
+}
+#endif
+
 //  The last used socket ID, or 0 if no socket was used so far. Note that this
 //  is a global variable. Thus, even sockets created in different contexts have
 //  unique IDs.

@@ -4,3 +4,6 @@
 [submodule "external/memchk"]
 	path = external/memchk
 	url = https://github.com/axelriet/memchk.git
+[submodule "external/usrsctp"]
+	path = external/usrsctp
+	url = https://github.com/sctplab/usrsctp.git

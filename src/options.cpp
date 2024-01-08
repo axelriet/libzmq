@@ -254,6 +254,8 @@ zmq::options_t::options_t () :
     hvsocket_connected_suspend = true;
     hvsocket_high_vtl = false;
 #endif
+#if defined ZMQ_HAVE_SCTP
+#endif
 }
 
 int zmq::options_t::set_curve_key (uint8_t *destination_,

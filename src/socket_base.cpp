@@ -46,7 +46,7 @@
 #include "mailbox.hpp"
 #include "mailbox_safe.hpp"
 
-#ifdef ZMQ_HAVE_WSS
+#if defined ZMQ_HAVE_WSS
 #include "wss_address.hpp"
 #endif
 #if defined ZMQ_HAVE_VMCI
@@ -61,8 +61,11 @@
 #include "hvsocket_address.hpp"
 #include "hvsocket_listener.hpp"
 #endif
-
-#ifdef ZMQ_HAVE_OPENPGM
+#if defined ZMQ_HAVE_SCTP
+#include "sctp_address.hpp"
+#include "sctp_listener.hpp"
+#endif
+#if defined ZMQ_HAVE_OPENPGM
 #include "pgm_socket.hpp"
 #endif
 
@@ -353,6 +356,9 @@ int zmq::socket_base_t::check_protocol (const std::string &protocol_) const
 #endif
 #if defined ZMQ_HAVE_HVSOCKET
         && protocol_ != protocol_name::hvsocket
+#endif
+#if defined ZMQ_HAVE_SCTP
+        && protocol_ != protocol_name::sctp
 #endif
         && protocol_ != protocol_name::udp) {
         errno = EPROTONOSUPPORT;
@@ -799,6 +805,28 @@ int zmq::socket_base_t::bind (const char *endpoint_uri_)
     }
 #endif
 
+#if defined ZMQ_HAVE_SCTP
+    if (protocol == protocol_name::sctp) {
+        sctp_listener_t *listener =
+          new (std::nothrow) sctp_listener_t (io_thread, /*this,*/ options);
+        alloc_assert (listener);
+//        rc = listener->set_local_address (address.c_str ());
+        if (rc != 0) {
+            LIBZMQ_DELETE (listener);
+            event_bind_failed (make_unconnected_bind_endpoint_pair (address),
+                               zmq_errno ());
+            return -1;
+        }
+
+//        listener->get_local_address (_last_endpoint);
+
+//        add_endpoint (make_unconnected_bind_endpoint_pair (_last_endpoint),
+//                      static_cast<own_t *> (listener), NULL);
+        options.connected = true;
+        return 0;
+    }
+#endif
+
     zmq_assert (false);
     return -1;
 }
@@ -1118,6 +1146,19 @@ int zmq::socket_base_t::connect_internal (const char *endpoint_uri_)
           new (std::nothrow) hvsocket_address_t (this->get_ctx ());
         alloc_assert (paddr->resolved.hvsocket_addr);
         rc = paddr->resolved.hvsocket_addr->resolve (address.c_str ());
+        if (rc != 0) {
+            LIBZMQ_DELETE (paddr);
+            return -1;
+        }
+    }
+#endif
+
+#if defined ZMQ_HAVE_SCTP
+    else if (protocol == protocol_name::sctp) {
+        paddr->resolved.sctp_addr =
+          new (std::nothrow) sctp_address_t (this->get_ctx ());
+        alloc_assert (paddr->resolved.sctp_addr);
+        rc = paddr->resolved.sctp_addr->resolve (address.c_str ());
         if (rc != 0) {
             LIBZMQ_DELETE (paddr);
             return -1;

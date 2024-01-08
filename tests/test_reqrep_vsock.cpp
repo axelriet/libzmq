@@ -2,7 +2,6 @@
 
 #include <string>
 #include <sstream>
-#include <vmci_sockets.h>
 
 #include "testutil.hpp"
 #include "testutil_unity.hpp"

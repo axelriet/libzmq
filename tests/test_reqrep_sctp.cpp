@@ -8,15 +8,15 @@
 
 SETUP_TEARDOWN_TESTCONTEXT
 
-void test_reqrep_hvsocket ()
+void test_reqrep_sctp ()
 {
-    std::string endpoint = "hyperv://localhost:5580";
+    std::string endpoint = "sctp://localhost:5780";
 
     void *sb = test_context_socket (ZMQ_DEALER);
     int rc = zmq_bind (sb, endpoint.c_str ());
     if (rc < 0 && (errno == EAFNOSUPPORT || errno == EPROTONOSUPPORT)) {
         test_context_socket_close_zero_linger (sb);
-        TEST_IGNORE_MESSAGE ("HVSOCKET not supported");
+        TEST_IGNORE_MESSAGE ("SCTP not supported");
     }
     TEST_ASSERT_SUCCESS_ERRNO (rc);
 
@@ -34,6 +34,6 @@ int ZMQ_CDECL main (void)
     setup_test_environment ();
 
     UNITY_BEGIN ();
-    RUN_TEST (test_reqrep_hvsocket);
+    RUN_TEST (test_reqrep_sctp);
     return UNITY_END ();
 }

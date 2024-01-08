@@ -195,6 +195,12 @@ src_libzmq_la_SOURCES = \
 	src/router.hpp \
 	src/scatter.cpp \
 	src/scatter.hpp \
+	src/sctp.cpp \
+	src/sctp.hpp \
+	src/sctp_connecter.cpp \
+	src/sctp_connecter.hpp \
+	src/sctp_listener.cpp \
+	src/sctp_listener.hpp \
 	src/secure_allocator.hpp \
 	src/select.cpp \
 	src/select.hpp \
@@ -1059,53 +1065,58 @@ endif
 
 if HAVE_VMCI
 test_apps += tests/test_pair_vmci tests/test_reqrep_vmci
-
 tests_test_pair_vmci_SOURCES = tests/test_pair_vmci.cpp
 tests_test_pair_vmci_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
 tests_test_pair_vmci_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
 tests_test_pair_vmci_LDFLAGS = @LIBZMQ_VMCI_LDFLAGS@
 tests_test_pair_vmci_CXXFLAGS = @LIBZMQ_VMCI_CXXFLAGS@
-
 tests_test_reqrep_vmci_SOURCES = tests/test_reqrep_vmci.cpp
 tests_test_reqrep_vmci_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
 tests_test_reqrep_vmci_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
 tests_test_reqrep_vmci_LDFLAGS = @LIBZMQ_VMCI_LDFLAGS@
 tests_test_reqrep_vmci_CXXFLAGS = @LIBZMQ_VMCI_CXXFLAGS@
-
 endif
 
 if HAVE_HVSOCKET
 test_apps += tests/test_pair_hvsocket tests/test_reqrep_hvsocket
-
 tests_test_pair_hvsocket_SOURCES = tests/test_pair_hvsocket.cpp
 tests_test_pair_hvsocket_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
 tests_test_pair_hvsocket_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
-tests_test_pair_hvsocket_LDFLAGS = @LIBZMQ_hvsocket_LDFLAGS@
-tests_test_pair_hvsocket_CXXFLAGS = @LIBZMQ_hvsocket_CXXFLAGS@
-
+tests_test_pair_hvsocket_LDFLAGS = @LIBZMQ_HVSOCKET_LDFLAGS@
+tests_test_pair_hvsocket_CXXFLAGS = @LIBZMQ_HVSOCKET_CXXFLAGS@
 tests_test_reqrep_hvsocket_SOURCES = tests/test_reqrep_hvsocket.cpp
 tests_test_reqrep_hvsocket_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
 tests_test_reqrep_hvsocket_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
-tests_test_reqrep_hvsocket_LDFLAGS = @LIBZMQ_hvsocket_LDFLAGS@
-tests_test_reqrep_hvsocket_CXXFLAGS = @LIBZMQ_hvsocket_CXXFLAGS@
+tests_test_reqrep_hvsocket_LDFLAGS = @LIBZMQ_HVSOCKET_LDFLAGS@
+tests_test_reqrep_hvsocket_CXXFLAGS = @LIBZMQ_HVSOCKET_CXXFLAGS@
+endif
 
+if HAVE_SCTP
+test_apps += tests/test_pair_sctp tests/test_reqrep_sctp
+tests_test_pair_sctp_SOURCES = tests/test_pair_sctp.cpp
+tests_test_pair_sctp_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
+tests_test_pair_sctp_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
+tests_test_pair_sctp_LDFLAGS = @LIBZMQ_SCTP_LDFLAGS@
+tests_test_pair_sctp_CXXFLAGS = @LIBZMQ_SCTP_CXXFLAGS@
+tests_test_reqrep_sctp_SOURCES = tests/test_reqrep_sctp.cpp
+tests_test_reqrep_sctp_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
+tests_test_reqrep_sctp_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
+tests_test_reqrep_sctp_LDFLAGS = @LIBZMQ_SCTP_LDFLAGS@
+tests_test_reqrep_sctp_CXXFLAGS = @LIBZMQ_SCTP_CXXFLAGS@
 endif
 
 if HAVE_VSOCK
 test_apps += tests/test_pair_vsock tests/test_reqrep_vsock
-
 tests_test_pair_vsock_SOURCES = tests/test_pair_vsock.cpp
 tests_test_pair_vsock_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
 tests_test_pair_vsock_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
 tests_test_pair_vsock_LDFLAGS = @LIBZMQ_vsock_LDFLAGS@
 tests_test_pair_vsock_CXXFLAGS = @LIBZMQ_vsock_CXXFLAGS@
-
 tests_test_reqrep_vsock_SOURCES = tests/test_reqrep_vsock.cpp
 tests_test_reqrep_vsock_LDADD = ${TESTUTIL_LIBS} src/libzmq.la
 tests_test_reqrep_vsock_CPPFLAGS = ${TESTUTIL_CPPFLAGS}
 tests_test_reqrep_vsock_LDFLAGS = @LIBZMQ_vsock_LDFLAGS@
 tests_test_reqrep_vsock_CXXFLAGS = @LIBZMQ_vsock_CXXFLAGS@
-
 endif
 
 if ENABLE_DRAFTS

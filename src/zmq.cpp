@@ -1937,6 +1937,11 @@ ZMQ_EXPORT_IMPL (int) zmq_has (_In_z_ const char *capability_)
         return true;
 #endif
 
+#if defined(ZMQ_HAVE_SCTP)
+    if (strcmp (capability_, zmq::protocol_name::sctp) == 0)
+        return true;
+#endif
+
         //
         // Security
         //

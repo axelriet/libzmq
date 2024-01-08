@@ -133,6 +133,11 @@ class ctx_t ZMQ_FINAL : public thread_ctx_t
     int get_hvsocket_socket_family () const;
 #endif
 
+#ifdef ZMQ_HAVE_SCTP
+    // Return family for the HVSOCKET socket.
+    int get_sctp_socket_family () const;
+#endif
+
     enum
     {
         term_tid = 0,

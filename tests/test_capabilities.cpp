@@ -85,6 +85,12 @@ void test_capabilities ()
     TEST_ASSERT_FALSE (zmq_has ("hyperv"));
 #endif
 
+#if defined(ZMQ_HAVE_SCTP)
+    TEST_ASSERT_TRUE (zmq_has ("sctp"));
+#else
+    TEST_ASSERT_FALSE (zmq_has ("sctp"));
+#endif
+
     //
     // Security
     //

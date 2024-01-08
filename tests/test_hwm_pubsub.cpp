@@ -332,7 +332,10 @@ DEFINE_REGULAR_TEST_CASES (vmci, "vmci://*:*")
 DEFINE_REGULAR_TEST_CASES (vsock, "vsock://2:2223")
 #endif
 #if defined ZMQ_HAVE_HVSOCKET
-DEFINE_REGULAR_TEST_CASES (hyperv, "hyperv://loopback:3334")
+DEFINE_REGULAR_TEST_CASES (hvsocket, "hyperv://loopback:3334")
+#endif
+#if defined ZMQ_HAVE_SCTP
+DEFINE_REGULAR_TEST_CASES (sctp, "sctp://loopback:3338")
 #endif
 #if defined ZMQ_HAVE_NORM
 DEFINE_REGULAR_TEST_CASES (norm, "norm://" PRIVATE_EXPERIMENT_MULTICAST ":6310")
@@ -364,7 +367,10 @@ int ZMQ_CDECL main ()
     RUN_REGULAR_TEST_CASES (vsock);
 #endif
 #if defined ZMQ_HAVE_HVSOCKET
-    RUN_REGULAR_TEST_CASES (hyperv);
+    RUN_REGULAR_TEST_CASES (hvsocket);
+#endif
+#if defined ZMQ_HAVE_SCTP
+    RUN_REGULAR_TEST_CASES (sctp);
 #endif
 #if 0 // Norm hangs on this test :(
 #if defined ZMQ_HAVE_NORM

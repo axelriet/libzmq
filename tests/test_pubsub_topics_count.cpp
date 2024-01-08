@@ -243,6 +243,16 @@ void test_independent_and_nested_topic_prefixes_hvsocket ()
 #endif
 }
 
+void test_independent_and_nested_topic_prefixes_sctp ()
+{
+#if defined ZMQ_HAVE_SCTP
+    _test_independent_topic_prefixes ("sctp://loopback:8898");
+    _test_nested_topic_prefixes ("sctp://loopback:8899");
+#else
+    TEST_IGNORE_MESSAGE ("libzmq without SCTP, ignoring test.");
+#endif
+}
+
 void test_independent_and_nested_topic_prefixes_norm ()
 {
 #if defined ZMQ_HAVE_NORM
@@ -270,6 +280,7 @@ int ZMQ_CDECL main ()
     RUN_TEST (test_independent_and_nested_topic_prefixes_vsock);
     RUN_TEST (test_independent_and_nested_topic_prefixes_hvsocket);
     RUN_TEST (test_independent_and_nested_topic_prefixes_norm);
+    RUN_TEST (test_independent_and_nested_topic_prefixes_sctp);
 
     return UNITY_END ();
 }

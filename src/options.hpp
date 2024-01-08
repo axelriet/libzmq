@@ -236,6 +236,9 @@ struct options_t
     bool hvsocket_high_vtl;
 #endif
 
+#if defined ZMQ_HAVE_SCTP
+#endif
+
     //  When creating a new ZMQ socket, if this option is set the value
     //  will be used as the File Descriptor instead of allocating a new
     //  one via the socket () system call.

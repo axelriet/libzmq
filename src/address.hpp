@@ -37,6 +37,9 @@ class vsock_address_t;
 #if defined ZMQ_HAVE_HVSOCKET
 class hvsocket_address_t;
 #endif
+#if defined ZMQ_HAVE_SCTP
+class sctp_address_t;
+#endif
 
 namespace protocol_name
 {
@@ -70,6 +73,9 @@ static const char vsock[] = "vsock";
 #endif
 #if defined ZMQ_HAVE_HVSOCKET
 static const char hvsocket[] = "hyperv";
+#endif
+#if defined ZMQ_HAVE_SCTP
+static const char sctp[] = "sctp";
 #endif
 }
 
@@ -112,6 +118,9 @@ struct address_t
 #endif
 #if defined ZMQ_HAVE_HVSOCKET
         hvsocket_address_t *hvsocket_addr;
+#endif
+#if defined ZMQ_HAVE_SCTP
+        sctp_address_t *sctp_addr;
 #endif
     } resolved;
 

@@ -161,6 +161,10 @@ if(WITH_HVSOCKET)
   list(APPEND tests test_pair_hvsocket test_reqrep_hvsocket)
 endif()
 
+if(WITH_SCTP)
+  list(APPEND tests test_pair_sctp test_reqrep_sctp)
+endif()
+
 if(ENABLE_DRAFTS)
   list(
     APPEND

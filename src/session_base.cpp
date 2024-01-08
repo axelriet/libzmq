@@ -22,6 +22,9 @@
 #if defined ZMQ_HAVE_HVSOCKET
 #include "hvsocket_connecter.hpp"
 #endif
+#if defined ZMQ_HAVE_SCTP
+#include "sctp_connecter.hpp"
+#endif
 
 #include "pgm_sender.hpp"
 #include "pgm_receiver.hpp"
@@ -652,6 +655,12 @@ void zmq::session_base_t::start_connecting (bool wait_)
     else if (_addr->protocol == protocol_name::hvsocket) {
         connecter = new (std::nothrow)
           hvsocket_connecter_t (io_thread, this, options, _addr, wait_);
+    }
+#endif
+#if defined ZMQ_HAVE_SCTP
+    else if (_addr->protocol == protocol_name::sctp) {
+//        connecter = new (std::nothrow)
+//          sctp_connecter_t (io_thread, /*this,*/ options/*, _addr, wait_*/);
     }
 #endif
 #if defined ZMQ_HAVE_WS

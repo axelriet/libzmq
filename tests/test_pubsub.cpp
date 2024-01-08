@@ -485,6 +485,15 @@ void test_hvsocket ()
 #endif
 }
 
+void test_sctp ()
+{
+#if defined ZMQ_HAVE_SCTP
+    test ("sctp://loopback:3456");
+#else
+    TEST_IGNORE_MESSAGE ("libzmq without SCTP, ignoring test.");
+#endif
+}
+
 int ZMQ_CDECL main ()
 {
     setup_test_environment ();
@@ -499,6 +508,7 @@ int ZMQ_CDECL main ()
     RUN_TEST (test_pgm);
     RUN_TEST (test_epgm);
     RUN_TEST (test_norm);
+    RUN_TEST (test_sctp);
 
     RUN_TEST (test_vmci);
     RUN_TEST (test_vsock);

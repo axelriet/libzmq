@@ -23,6 +23,10 @@
 #include "hvsocket_address.hpp"
 #endif
 
+#if defined ZMQ_HAVE_SCTP
+#include "sctp_address.hpp"
+#endif
+
 #include <string>
 #include <sstream>
 
@@ -78,6 +82,11 @@ zmq::address_t::~address_t ()
         LIBZMQ_DELETE (resolved.hvsocket_addr);
     }
 #endif
+#if defined ZMQ_HAVE_SCTP
+    else if (protocol == protocol_name::sctp) {
+        LIBZMQ_DELETE (resolved.sctp_addr);
+    }
+#endif
 }
 
 int zmq::address_t::to_string (std::string &addr_) const
@@ -113,6 +122,10 @@ int zmq::address_t::to_string (std::string &addr_) const
 #if defined ZMQ_HAVE_HVSOCKET
     if (protocol == protocol_name::hvsocket && resolved.hvsocket_addr)
         return resolved.hvsocket_addr->to_string (addr_);
+#endif
+#if defined ZMQ_HAVE_SCTP
+    if (protocol == protocol_name::sctp && resolved.sctp_addr)
+        return resolved.sctp_addr->to_string (addr_);
 #endif
 
     if (!protocol.empty () && !address.empty ()) {
