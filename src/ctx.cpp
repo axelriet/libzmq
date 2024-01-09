@@ -29,6 +29,10 @@
 #include "vsock_address.hpp"
 #endif
 
+#ifdef ZMQ_HAVE_SCTP
+#include "sctp_address.hpp"
+#endif
+
 #ifdef ZMQ_USE_NSS
 #include <nss.h>
 #endif
@@ -927,7 +931,7 @@ int zmq::ctx_t::get_hvsocket_socket_family () const
 #ifdef ZMQ_HAVE_SCTP
 int zmq::ctx_t::get_sctp_socket_family () const
 {
-    return AF_INET;
+    return AF_CONN;
 }
 #endif
 

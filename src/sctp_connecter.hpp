@@ -1,97 +1,81 @@
 /* SPDX-License-Identifier: MPL-2.0 */
 
-#ifndef __ZMQ_SCTP_SENDER_HPP_INCLUDED__
-#define __ZMQ_SCTP_SENDER_HPP_INCLUDED__
+#ifndef __ZMQ_SCTP_CONNECTER_HPP_INCLUDED__
+#define __ZMQ_SCTP_CONNECTER_HPP_INCLUDED__
+
+#include "platform.hpp"
 
 #if defined ZMQ_HAVE_SCTP
 
+#include "fd.hpp"
+#include "own.hpp"
 #include "stdint.hpp"
 #include "io_object.hpp"
-#include "i_engine.hpp"
-#include "options.hpp"
-#include "SCTP.hpp"
-#include "v1_encoder.hpp"
-#include "msg.hpp"
+#include "stream_connecter_base.hpp"
 
 namespace zmq
 {
 class io_thread_t;
 class session_base_t;
+struct address_t;
 
-class sctp_connecter_t ZMQ_FINAL : public io_object_t, public i_engine
+class sctp_connecter_t ZMQ_FINAL : public stream_connecter_base_t
 {
   public:
-    sctp_connecter_t (zmq::io_thread_t *parent_, const options_t &options_);
+    //  If 'delayed_start' is true connecter first waits for a while,
+    //  then starts connection process.
+    sctp_connecter_t (zmq::io_thread_t *io_thread_,
+                       zmq::session_base_t *session_,
+                       const options_t &options_,
+                       address_t *addr_,
+                       bool delayed_start_);
     ~sctp_connecter_t ();
 
-    int init (bool udp_encapsulation_, const char *network_);
-
-    //  i_engine interface implementation.
-    bool has_handshake_stage () { return false; };
-    void plug (zmq::io_thread_t *io_thread_, zmq::session_base_t *session_);
-    void terminate ();
-    bool restart_input ();
-    void restart_output ();
-    void zap_msg_available () {}
-    const endpoint_uri_pair_t &get_endpoint () const;
-
-    //  i_poll_events interface implementation.
-    void in_event ();
-    void out_event ();
-    void timer_event (int token);
+  protected:
+    std::string get_socket_name (fd_t fd_, socket_end_t socket_end_) const;
 
   private:
-    //  Unplug the engine from the session.
-    void unplug ();
-
-    //  TX and RX timeout timer ID's.
+    //  ID of the timer used to check the connect timeout, must be different from stream_connecter_base_t::reconnect_timer_id.
     enum
     {
-        tx_timer_id = 0xa0,
-        rx_timer_id = 0xa1
+        connect_timer_id = 2
     };
 
-    const endpoint_uri_pair_t _empty_endpoint;
+    //  Handlers for incoming commands.
+    void process_term (int linger_);
 
-    //  Timers are running.
-    bool has_tx_timer;
-    bool has_rx_timer;
+    //  Handlers for I/O events.
+    void in_event ();
+    void out_event ();
+    void timer_event (int id_);
 
-    session_base_t *session;
+    //  Internal function to start the actual connection establishment.
+    void start_connecting ();
 
-    //  Message encoder.
-    v1_encoder_t encoder;
+    //  Internal function to add a connect timer
+    void add_connect_timer ();
 
-    msg_t msg;
+    //  Internal function to return a reconnect backoff delay.
+    //  Will modify the current_reconnect_ivl used for next call
+    //  Returns the currently used interval
+    int get_new_reconnect_ivl ();
 
-    //  Keeps track of message boundaries.
-    bool more;
+    //  Open VSOCK connecting socket. Returns -1 in case of error,
+    //  0 if connect was successful immediately. Returns -1 with
+    //  EAGAIN errno if async connect was launched.
+    int open ();
 
-    //  SCTP socket.
-    sctp_t SCTP;
+    //  Get the file descriptor of newly created connection. Returns
+    //  retired_fd if the connection was unsuccessful.
+    fd_t connect ();
 
-    //  Socket options.
-    options_t options;
-
-    //  Poll handle associated with SCTP socket.
-    handle_t handle;
-    handle_t uplink_handle;
-    handle_t rdata_notify_handle;
-    handle_t pending_notify_handle;
-
-    //  Output buffer from SCTP.
-    unsigned char *out_buffer;
-
-    //  Output buffer size.
-    size_t _out_batch_size;
-
-    //  Number of bytes in the buffer to be written to the socket.
-    //  If zero, there are no data to be sent.
-    size_t write_size;
+    //  True iff a timer has been started.
+    bool _connect_timer_started;
 
     ZMQ_NON_COPYABLE_NOR_MOVABLE (sctp_connecter_t)
 };
 }
+
 #endif
 
 #endif

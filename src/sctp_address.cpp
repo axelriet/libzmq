@@ -4,7 +4,7 @@
 
 #include "sctp_address.hpp"
 
-#if defined(ZMQ_HAVE_VSOCK)
+#if defined(ZMQ_HAVE_SCTP)
 
 #include <climits>
 #include <string>
@@ -68,7 +68,15 @@ int zmq::sctp_address_t::resolve (const char *path_)
         return -1;
 
     } else if (addr_str != "*") {
+        //
+        // Test for well-known aliases first.
+        //
+
+        if (addr_str == "any") {
+        }
     }
+
+    uint16_t port = 0;
 
     if (!port_str.length ()) {
         //
@@ -79,41 +87,47 @@ int zmq::sctp_address_t::resolve (const char *path_)
         return -1;
 
     } else if (port_str != "*") {
+        //
+        // Numeric interpretation.
+        //
+
+        char *end = NULL;
+        const char *begin = port_str.c_str ();
+        const unsigned long l = strtoul (begin, &end, 10);
+
+        if ((l == 0 && end == begin) || (l == ULONG_MAX && errno == ERANGE)
+            || l > USHRT_MAX) {
+            errno = EINVAL;
+            return -1;
+        }
+
+        port = static_cast<uint16_t> (l);
     }
 
-    address.svm_family =
+    address.sconn_family =
       static_cast<unsigned short> (parent->get_sctp_socket_family ());
 
-//    address.svm_cid = cid;
-//    address.svm_port = port;
+    address.sconn_port = port;
+
+    address.sconn_addr = 0;
 
     return 0;
 }
 
 int zmq::sctp_address_t::to_string (std::string &addr_) const
 {
-    if (address.svm_family != parent->get_sctp_socket_family ()) {
+    if (address.sconn_family != parent->get_sctp_socket_family ()) {
         addr_.clear ();
         return -1;
     }
 
     std::stringstream s;
 
-    s << protocol_name::sctp << "://";
+    s << protocol_name::sctp << "://" << address.sconn_addr;
 
-//    if (address.svm_cid == VMADDR_CID_ANY) {
-//        s << "*";
-//    } else {
-        s << address.svm_cid;
-//    }
-
-    s << ":";
-
-//    if (address.svm_port == VMADDR_PORT_ANY) {
-//        s << "*";
-//    } else {
-        s << address.svm_port;
-//    }
+    if (address.sconn_port != 0) {
+        s << ":" << address.sconn_port;
+    }
 
     addr_ = s.str ();
 
@@ -136,7 +150,7 @@ unsigned short zmq::sctp_address_t::family () const
 sa_family_t zmq::sctp_address_t::family () const
 #endif
 {
-    return AF_INET;
+    return AF_CONN;
 }
 
 #endif

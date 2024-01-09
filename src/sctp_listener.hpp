@@ -87,7 +87,7 @@ class sctp_listener_t ZMQ_FINAL : public io_object_t, public i_engine
 //    peers_t peers;
 
     //  SCTP socket.
-    sctp_t SCTP;
+//    sctp_t SCTP;
 
     //  Socket options.
     options_t options;

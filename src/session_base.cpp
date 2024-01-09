@@ -659,8 +659,8 @@ void zmq::session_base_t::start_connecting (bool wait_)
 #endif
 #if defined ZMQ_HAVE_SCTP
     else if (_addr->protocol == protocol_name::sctp) {
-//        connecter = new (std::nothrow)
-//          sctp_connecter_t (io_thread, /*this,*/ options/*, _addr, wait_*/);
+        connecter = new (std::nothrow)
+          sctp_connecter_t (io_thread, this, options, _addr, wait_);
     }
 #endif
 #if defined ZMQ_HAVE_WS
