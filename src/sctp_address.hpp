@@ -22,7 +22,7 @@ class sctp_address_t
     sctp_address_t (ctx_t *parent_);
     sctp_address_t (const sockaddr *sa, socklen_t sa_len, ctx_t *parent_);
 
-    //  This function sets up the address for VSOCK transport.
+    //  This function sets up the address for SCTP transport.
     int resolve (const char *path_);
 
     //  The opposite to resolve()
