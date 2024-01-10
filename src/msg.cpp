@@ -207,6 +207,7 @@ int zmq::msg_t::init_size (size_t size_)
 #endif
         new (&_u.lmsg.content->refcnt) zmq::atomic_counter_t ();
     }
+
     return 0;
 }
 

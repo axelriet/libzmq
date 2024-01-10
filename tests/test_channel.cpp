@@ -40,7 +40,7 @@ void test_sndmore_fails ()
 {
     int rc = zmq_send (sc, "X", 1, ZMQ_SNDMORE);
     TEST_ASSERT_EQUAL_INT (-1, rc);
-    TEST_ASSERT_EQUAL_INT (EINVAL, errno);
+    TEST_ASSERT_EQUAL_INT (EINVAL, zmq_errno ());
 }
 
 int ZMQ_CDECL main ()

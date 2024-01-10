@@ -30,7 +30,7 @@ void recv_string_expect_success_or_eagain (void *socket_,
 
     const int rc = zmq_recv (socket_, buffer, sizeof (buffer), flags_);
     if (rc < 0) {
-        if (errno == EAGAIN) {
+        if (zmq_errno () == EAGAIN) {
             printf ("got EAGAIN\n");
             return;
         } else {

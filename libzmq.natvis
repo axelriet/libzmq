@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	<Type Name="zmq::msg_t">
+		<DisplayString Condition="_u.base.type == 101">{(type_t)(_u.base.type)} flags={(int)_u.base.flags} size={(int)_u.vsm.size} routing_id={_u.base.routing_id}</DisplayString>
+		<DisplayString Condition="_u.base.type == 102">{(type_t)(_u.base.type)} flags={(int)_u.base.flags} size={(int)_u.lmsg.content->size} routing_id={_u.base.routing_id}</DisplayString>
+		<DisplayString Condition="_u.base.type == 103">{(type_t)(_u.base.type)} flags={(int)_u.base.flags} routing_id={_u.base.routing_id}</DisplayString>
+		<DisplayString Condition="_u.base.type == 104">{(type_t)(_u.base.type)} flags={(int)_u.base.flags} size={(int)_u.cmsg.size} routing_id={_u.base.routing_id}</DisplayString>
+		<DisplayString Condition="_u.base.type == 105">{(type_t)(_u.base.type)} flags={(int)_u.base.flags} size={(int)_u.zclmsg.content->size} routing_id={_u.base.routing_id}</DisplayString>
+		<DisplayString>{(type_t)(_u.base.type)} flags={_u.base.flags}</DisplayString>
+	</Type>
+</AutoVisualizer>

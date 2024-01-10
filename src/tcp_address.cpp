@@ -102,7 +102,7 @@ static std::string make_address_string (const char *hbuf_,
     pos += hbuf_len;
     memcpy (pos, ipv6_suffix_, sizeof ipv6_suffix_ - 1);
     pos += sizeof ipv6_suffix_ - 1;
-    int res = snprintf (pos, max_port_str_length + 1, "%d", ntohs (port_));
+    int res = snprintf (pos, max_port_str_length + 1, "%u", ntohs (port_));
     zmq_assert (res > 0 && res < (int) (max_port_str_length + 1));
     pos += res;
     return std::string (buf, pos - buf);

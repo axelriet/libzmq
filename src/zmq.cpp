@@ -99,9 +99,18 @@ ZMQ_EXPORT_STR_IMPL (const char *) zmq_strerror (int errnum_)
 
 ZMQ_EXPORT_IMPL (int) zmq_errno (void)
 {
-    return errno;
+    //
+    // Never retrieve errno from calling code. You may end up
+    // getting the calling code's errno instead of the 0MQ errno.
+    //
+
+    return errno; 
 }
 
+ZMQ_EXPORT_VOID_IMPL zmq_clear_errno (void)
+{
+    errno = 0;
+}
 
 //  New context API
 

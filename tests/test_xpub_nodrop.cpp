@@ -44,7 +44,7 @@ void test ()
         //  Receive the message in the subscriber
         int rc = zmq_recv (sub, NULL, 0, 0);
         if (rc == -1) {
-            TEST_ASSERT_EQUAL_INT (EAGAIN, errno);
+            TEST_ASSERT_EQUAL_INT (EAGAIN, zmq_errno ());
             break;
         }
         TEST_ASSERT_EQUAL_INT (0, rc);
@@ -72,7 +72,7 @@ void test ()
     //  Send an empty message until we get an error, which must be EAGAIN
     while (zmq_send (pub, "", 0, 0) == 0)
         send_count++;
-    TEST_ASSERT_EQUAL_INT (EAGAIN, errno);
+    TEST_ASSERT_EQUAL_INT (EAGAIN, zmq_errno ());
 
     if (send_count > 0) {
         //  Receive first message with blocking

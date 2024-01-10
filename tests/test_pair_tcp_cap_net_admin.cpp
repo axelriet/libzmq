@@ -25,7 +25,7 @@ void test_pair_tcp (extra_func_t extra_func_ = NULL)
     char my_endpoint[MAX_SOCKET_STRING];
     size_t my_endpoint_length = sizeof my_endpoint;
     int rc = zmq_bind (sb, "tcp://127.0.0.1:*");
-    if (rc < 0 && errno == EOPNOTSUPP)
+    if (rc < 0 && zmq_errno () == EOPNOTSUPP)
         TEST_IGNORE_MESSAGE ("SO_BINDTODEVICE not supported");
     TEST_ASSERT_SUCCESS_ERRNO (rc);
     TEST_ASSERT_SUCCESS_ERRNO (

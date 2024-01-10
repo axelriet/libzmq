@@ -44,7 +44,7 @@ extern "C" int LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         size -= 29;
     }
     msleep (250);
-    for (ssize_t sent = 0; size > 0 && (sent != -1 || errno == EINTR);
+    for (ssize_t sent = 0; size > 0 && (sent != -1 || zmq_errno () == EINTR);
          size -= sent > 0 ? sent : 0, data += sent > 0 ? sent : 0)
         sent = send (server_accept, (const char *) data, size, MSG_NOSIGNAL);
     msleep (250);

@@ -54,7 +54,7 @@ void test_fork ()
         int child_status;
         while (true) {
             int rc = waitpid (pid, &child_status, 0);
-            if (rc == -1 && errno == EINTR)
+            if (rc == -1 && zmq_errno () == EINTR)
                 continue;
             TEST_ASSERT_GREATER_THAN (0, rc);
             //  Verify the status code of the child was zero

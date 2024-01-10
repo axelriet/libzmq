@@ -92,9 +92,9 @@ static void send_bounce_msg_may_fail (void *socket_)
     TEST_ASSERT_SUCCESS_ERRNO (
       zmq_setsockopt (socket_, ZMQ_SNDTIMEO, &timeout, sizeof (int)));
     int rc = zmq_send (socket_, bounce_content, 32, ZMQ_SNDMORE);
-    TEST_ASSERT_TRUE ((rc == 32) || ((rc == -1) && (errno == EAGAIN)));
+    TEST_ASSERT_TRUE ((rc == 32) || ((rc == -1) && (zmq_errno () == EAGAIN)));
     rc = zmq_send (socket_, bounce_content, 32, 0);
-    TEST_ASSERT_TRUE ((rc == 32) || ((rc == -1) && (errno == EAGAIN)));
+    TEST_ASSERT_TRUE ((rc == 32) || ((rc == -1) && (zmq_errno () == EAGAIN)));
 }
 
 static void recv_bounce_msg_fail (void *socket_)
@@ -196,7 +196,7 @@ void close_zero_linger (void *socket_)
 {
     int linger = 0;
     int rc = zmq_setsockopt (socket_, ZMQ_LINGER, &linger, sizeof (linger));
-    TEST_ASSERT_TRUE (rc == 0 || errno == ETERM);
+    TEST_ASSERT_TRUE (rc == 0 || zmq_errno () == ETERM);
     TEST_ASSERT_SUCCESS_ERRNO (zmq_close (socket_));
 }
 

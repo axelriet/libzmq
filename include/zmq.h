@@ -209,11 +209,11 @@ typedef unsigned __int8 uint8_t;
 #define ETERM (ZMQ_HAUSNUMERO + 53)
 #define EMTHREAD (ZMQ_HAUSNUMERO + 54)
 
-/*  This function retrieves the errno as it is known to 0MQ library. The goal */
-/*  of this function is to make the code 100% portable, including where 0MQ   */
-/*  compiled with certain CRT library (on Windows) is linked to an            */
-/*  application that uses different CRT library.                              */
+/*  These functions retrieves/clears the errno as it is known to 0MQ library. */
+/*  Retrieving errno from the calling code don't work across DLL boundaries   */
+/*  if the DLL was build with the CRT embedded, e.g., with /MT on Windows.    */
 ZMQ_EXPORT (int) zmq_errno (void);
+ZMQ_EXPORT_VOID zmq_clear_errno (void);
 
 /*  Resolves system errors and 0MQ errors to human-readable string.           */
 ZMQ_EXPORT_STR (const char *) zmq_strerror (int errnum_);

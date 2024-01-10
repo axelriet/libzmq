@@ -406,8 +406,6 @@ class msg_t
 
     enum type_t
     {
-        type_min = 101,
-
         //  VSM messages store the content in the message itself
         type_vsm = 101,
 
@@ -429,6 +427,7 @@ class msg_t
         //  Leave message for radio_dish
         type_leave = 107,
 
+        type_min = 101,
         type_max = 107
     };
 
@@ -443,6 +442,7 @@ class msg_t
     //  of the data. Shared fields can be accessed via 'base' member of
     //  the union.
 
+#pragma pack(1) // MSVC, gcc-5.5.0, and clang supports this syntax
     union
     {
         struct
@@ -471,12 +471,18 @@ class msg_t
         struct
         {
             metadata_t *metadata;
-            content_t *content;
             uint32_t routing_id;
-            unsigned char
-              unused[msg_t_size
-                     - (sizeof (metadata_t *) + sizeof (content_t *) + 2
-                        + sizeof (uint32_t) + sizeof (group_t))];
+#if (INTPTR_MAX == INT64_MAX)
+            uint32_t padding;
+#endif
+            content_t *content;
+            unsigned char unused[msg_t_size
+                                 - (sizeof (metadata_t *) + sizeof (content_t *)
+                                    + 2 + sizeof (uint32_t) + sizeof (group_t)
+#if (INTPTR_MAX == INT64_MAX)
+                                    + sizeof (padding)
+#endif
+                                      )];
             unsigned char type;
             unsigned char flags;
             group_t group;
@@ -485,12 +491,18 @@ class msg_t
         struct
         {
             metadata_t *metadata;
-            content_t *content;
             uint32_t routing_id;
-            unsigned char
-              unused[msg_t_size
-                     - (sizeof (metadata_t *) + sizeof (content_t *) + 2
-                        + sizeof (uint32_t) + sizeof (group_t))];
+#if (INTPTR_MAX == INT64_MAX)
+            uint32_t padding;
+#endif
+            content_t *content;
+            unsigned char unused[msg_t_size
+                                 - (sizeof (metadata_t *) + sizeof (content_t *)
+                                    + 2 + sizeof (uint32_t) + sizeof (group_t)
+#if (INTPTR_MAX == INT64_MAX)
+                                    + sizeof (padding)
+#endif
+                                      )];
             unsigned char type;
             unsigned char flags;
             group_t group;
@@ -499,13 +511,20 @@ class msg_t
         struct
         {
             metadata_t *metadata;
+            uint32_t routing_id;
+#if (INTPTR_MAX == INT64_MAX)
+            uint32_t padding;
+#endif
             void *data;
             size_t size;
-            uint32_t routing_id;
             unsigned char unused[msg_t_size
                                  - (sizeof (metadata_t *) + sizeof (void *)
                                     + sizeof (size_t) + 2 + sizeof (uint32_t)
-                                    + sizeof (group_t))];
+                                    + sizeof (group_t)
+#if (INTPTR_MAX == INT64_MAX)
+                                    + sizeof (padding)
+#endif
+                                      )];
             unsigned char type;
             unsigned char flags;
             group_t group;
@@ -524,6 +543,7 @@ class msg_t
         } delimiter;
     } _u;
 };
+#pragma pack()
 
 inline int close_and_return (_Inout_ zmq::msg_t *msg_, int echo_)
 {

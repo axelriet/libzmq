@@ -199,7 +199,10 @@ static int handle_control (class zmq::socket_base_t *control_,
 
     int type;
     size_t sz = sizeof (type);
-    zmq_getsockopt (control_, ZMQ_TYPE, &type, &sz);
+    rc = zmq_getsockopt (control_, ZMQ_TYPE, &type, &sz);
+    if (unlikely (rc < 0)) {
+        return -1;
+    }
     if (type == ZMQ_REP) {
         // satisfy REP duty and reply no matter what.
         cmsg.init_size (0);

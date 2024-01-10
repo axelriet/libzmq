@@ -47,7 +47,7 @@ void test_issue_566 ()
         for (int attempt = 0; attempt < 500; attempt++) {
             zmq_poll (NULL, 0, 2);
             int rc = zmq_send (router, routing_id, 10, ZMQ_SNDMORE);
-            if (rc == -1 && errno == EHOSTUNREACH)
+            if (rc == -1 && zmq_errno () == EHOSTUNREACH)
                 continue;
             TEST_ASSERT_EQUAL (10, rc);
             send_string_expect_success (router, "HELLO", 0);

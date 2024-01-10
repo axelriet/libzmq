@@ -59,7 +59,7 @@ void test_invalid_proto_fails ()
 {
     int rc = zmq_connect (sock, "invalid://localhost:1234");
     TEST_ASSERT_EQUAL_INT (-1, rc);
-    TEST_ASSERT_EQUAL_INT (EPROTONOSUPPORT, errno);
+    TEST_ASSERT_EQUAL_INT (EPROTONOSUPPORT, zmq_errno ());
 }
 
 int ZMQ_CDECL main (void)
