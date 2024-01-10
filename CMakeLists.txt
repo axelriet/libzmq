@@ -1223,7 +1223,7 @@ if(WITH_HVSOCKET)
   message(STATUS "Building with optional HVSOCKET transport adapter.")
   set(ZMQ_HAVE_HVSOCKET 1)
   include_directories(${HVSOCKET_INCLUDE_DIRS})
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /delayload:computecore.dll")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /delayload:computecore.dll")
   list(APPEND cxx-sources hvsocket.cpp hvsocket.hpp hvsocket_address.cpp hvsocket_address.hpp hvsocket_connecter.cpp hvsocket_connecter.hpp hvsocket_listener.cpp hvsocket_listener.hpp)
 endif()
 
