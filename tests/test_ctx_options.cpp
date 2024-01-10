@@ -289,9 +289,9 @@ void test_ctx_option_invalid ()
                          "test binary would bugcheck.");
 #else
     TEST_ASSERT_EQUAL_INT (-1, zmq_ctx_set (get_test_context (), -1, 0));
-    TEST_ASSERT_EQUAL_INT (EINVAL, errno);
+    TEST_ASSERT_EQUAL_INT (EINVAL, zmq_errno ());
     TEST_ASSERT_EQUAL_INT (-1, zmq_ctx_get (get_test_context (), -1));
-    TEST_ASSERT_EQUAL_INT (EINVAL, errno);
+    TEST_ASSERT_EQUAL_INT (EINVAL, zmq_errno ());
 #endif
 }
 

@@ -81,7 +81,7 @@ int test_assert_failure_message_raw_errno_helper (
                                                        __LINE__)
 
 // Asserts that the socket API 'expr' is not successful, and the error code is
-// 'error_code'. In case of an unexpected succces, or a failure with an
+// 'error_code'. In case of an unexpected success, or a failure with an
 // unexpected error code, the assertion message includes the literal 'expr'
 // and, in case of a failure, the actual error code.
 #define TEST_ASSERT_FAILURE_RAW_ERRNO(error_code, expr)                        \
@@ -89,14 +89,14 @@ int test_assert_failure_message_raw_errno_helper (
                                                   #expr, __LINE__)
 
 // Asserts that the libzmq API 'expr' is not successful, and the error code is
-// 'error_code'. In case of an unexpected succces, or a failure with an
+// 'error_code'. In case of an unexpected success, or a failure with an
 // unexpected error code, the assertion message includes the literal 'expr'
 // and, in case of a failure, the actual error code.
 #define TEST_ASSERT_FAILURE_ERRNO(error_code, expr)                            \
     {                                                                          \
         int _rc = (expr);                                                      \
         TEST_ASSERT_EQUAL_INT (-1, _rc);                                       \
-        TEST_ASSERT_EQUAL_INT (error_code, errno);                             \
+        TEST_ASSERT_EQUAL_INT (error_code, zmq_errno());                       \
     }
 
 /////////////////////////////////////////////////////////////////////////////

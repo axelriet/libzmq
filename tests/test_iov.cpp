@@ -43,9 +43,6 @@ static void do_check (void *sb_, void *sc_, size_t msg_size_)
         send_iov[i].iov_base = &buf[i * msg_size_];
         send_iov[i].iov_len = msg_size_;
         memcpy (send_iov[i].iov_base, ref_msg, msg_size_);
-
-        // TODO: this assertion only checks if memcpy behaves as expected... remove this or assert something else?
-        TEST_ASSERT_EQUAL_HEX8_ARRAY (ref_msg, send_iov[i].iov_base, msg_size_);
     }
 
     // Test errors - zmq_recviov - null socket
@@ -89,7 +86,6 @@ static void do_check (void *sb_, void *sc_, size_t msg_size_)
     for (int i = 0; i < num_messages; i++) {
         TEST_ASSERT_NOT_NULL (recv_iov[i].iov_base);
         TEST_ASSERT_EQUAL_STRING_LEN (ref_msg, recv_iov[i].iov_base, msg_size_);
-        free (recv_iov[i].iov_base);
     }
 
     TEST_ASSERT_EQUAL_INT (send_count, recv_count);

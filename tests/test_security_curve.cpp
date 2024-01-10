@@ -480,16 +480,16 @@ void test_curve_security_invalid_keysize (void *ctx_)
     //  Check return codes for invalid buffer sizes
     void *client = zmq_socket (ctx_, ZMQ_DEALER);
     TEST_ASSERT_NOT_NULL (client);
-    errno = 0;
+    zmq_clear_errno ();
     int rc =
       zmq_setsockopt (client, ZMQ_CURVE_SERVERKEY, valid_server_public, 123);
-    assert (rc == -1 && errno == EINVAL);
-    errno = 0;
+    assert (rc == -1 && zmq_errno () == EINVAL);
+    zmq_clear_errno ();
     rc = zmq_setsockopt (client, ZMQ_CURVE_PUBLICKEY, valid_client_public, 123);
-    assert (rc == -1 && errno == EINVAL);
-    errno = 0;
+    assert (rc == -1 && zmq_errno () == EINVAL);
+    zmq_clear_errno ();
     rc = zmq_setsockopt (client, ZMQ_CURVE_SECRETKEY, valid_client_secret, 123);
-    assert (rc == -1 && errno == EINVAL);
+    assert (rc == -1 && zmq_errno () == EINVAL);
     TEST_ASSERT_SUCCESS_ERRNO (zmq_close (client));
 }
 

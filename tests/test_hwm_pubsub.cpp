@@ -174,7 +174,7 @@ int test_blocking (int send_hwm_, int msg_cnt_, const char *endpoint_)
         if (rc == 0) {
             ++send_count;
         } else if (-1 == rc) {
-            // if the PUB socket blocks due to HWM, errno should be EAGAIN:
+            // if the PUB socket blocks due to HWM, zmq_errno () should be EAGAIN:
             blocked_count++;
             TEST_ASSERT_FAILURE_ERRNO (EAGAIN, -1);
             recv_count += receive (sub_socket, &is_termination);

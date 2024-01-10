@@ -35,7 +35,7 @@ int test_assert_success_message_raw_errno_helper (
 #if defined ZMQ_HAVE_WINDOWS
         int current_errno = WSAGetLastError ();
 #else
-        int current_errno = errno;
+        int current_errno = errno; // Not zmq_errno()! 
 #endif
 
         char buffer[512];
@@ -76,7 +76,7 @@ int test_assert_failure_message_raw_errno_helper (
 #if defined ZMQ_HAVE_WINDOWS
         int current_errno = WSAGetLastError ();
 #else
-        int current_errno = errno;
+        int current_errno = errno; // Not zmq_errno()!
 #endif
         if (current_errno != expected_errno_) {
             snprintf (buffer, sizeof (buffer) - 1,

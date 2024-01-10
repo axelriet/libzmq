@@ -20,7 +20,7 @@ void send_sndmore_expect_failure (void *socket_)
 {
     int rc = zmq_send (socket_, "X", 1, ZMQ_SNDMORE);
     TEST_ASSERT_EQUAL_INT (-1, rc);
-    TEST_ASSERT_EQUAL_INT (EINVAL, errno);
+    TEST_ASSERT_EQUAL_INT (EINVAL, zmq_errno ());
 }
 
 void test_client_sndmore_fails ()

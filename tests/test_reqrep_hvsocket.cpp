@@ -15,7 +15,8 @@ void test_reqrep_hvsocket ()
 
     void *sb = test_context_socket (ZMQ_DEALER);
     int rc = zmq_bind (sb, endpoint.c_str ());
-    if (rc < 0 && (errno == EAFNOSUPPORT || errno == EPROTONOSUPPORT)) {
+    if (rc < 0
+        && (zmq_errno () == EAFNOSUPPORT || zmq_errno () == EPROTONOSUPPORT)) {
         test_context_socket_close_zero_linger (sb);
         TEST_IGNORE_MESSAGE ("HVSOCKET not supported");
     }

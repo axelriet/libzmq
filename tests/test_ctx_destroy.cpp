@@ -108,21 +108,21 @@ void test_zmq_ctx_term_null_fails ()
 {
     int rc = zmq_ctx_term (NULL);
     TEST_ASSERT_EQUAL_INT (-1, rc);
-    TEST_ASSERT_EQUAL_INT (EFAULT, errno);
+    TEST_ASSERT_EQUAL_INT (EFAULT, zmq_errno ());
 }
 
 void test_zmq_term_null_fails ()
 {
     int rc = zmq_term (NULL);
     TEST_ASSERT_EQUAL_INT (-1, rc);
-    TEST_ASSERT_EQUAL_INT (EFAULT, errno);
+    TEST_ASSERT_EQUAL_INT (EFAULT, zmq_errno ());
 }
 
 void test_zmq_ctx_shutdown_null_fails ()
 {
     int rc = zmq_ctx_shutdown (NULL);
     TEST_ASSERT_EQUAL_INT (-1, rc);
-    TEST_ASSERT_EQUAL_INT (EFAULT, errno);
+    TEST_ASSERT_EQUAL_INT (EFAULT, zmq_errno ());
 }
 
 #ifdef ZMQ_HAVE_POLLER

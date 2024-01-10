@@ -133,7 +133,7 @@ void test_get_peer_state_corner_cases ()
     int rc = zmq_socket_get_peer_state (NULL, peer_routing_id,
                                         strlen (peer_routing_id));
     TEST_ASSERT_EQUAL_INT (-1, rc);
-    TEST_ASSERT_EQUAL_INT (ENOTSOCK, errno);
+    TEST_ASSERT_EQUAL_INT (ENOTSOCK, zmq_errno ());
 
     void *dealer = test_context_socket (ZMQ_DEALER);
     void *router = test_context_socket (ZMQ_ROUTER);
@@ -142,13 +142,13 @@ void test_get_peer_state_corner_cases ()
     rc = zmq_socket_get_peer_state (dealer, peer_routing_id,
                                     strlen (peer_routing_id));
     TEST_ASSERT_EQUAL_INT (-1, rc);
-    TEST_ASSERT_EQUAL_INT (ENOTSUP, errno);
+    TEST_ASSERT_EQUAL_INT (ENOTSUP, zmq_errno ());
 
     //  call get_peer_state for an unknown routing id
     rc = zmq_socket_get_peer_state (router, peer_routing_id,
                                     strlen (peer_routing_id));
     TEST_ASSERT_EQUAL_INT (-1, rc);
-    TEST_ASSERT_EQUAL_INT (EHOSTUNREACH, errno);
+    TEST_ASSERT_EQUAL_INT (EHOSTUNREACH, zmq_errno ());
 
     test_context_socket_close (router);
     test_context_socket_close (dealer);
@@ -173,7 +173,7 @@ void test_basic ()
                                                &mandatory, sizeof (mandatory)));
     int rc = zmq_send (router, "UNKNOWN", 7, ZMQ_SNDMORE);
     TEST_ASSERT_EQUAL_INT (-1, rc);
-    TEST_ASSERT_EQUAL_INT (EHOSTUNREACH, errno);
+    TEST_ASSERT_EQUAL_INT (EHOSTUNREACH, zmq_errno ());
 
     //  Create dealer called "X" and connect it to our router
     void *dealer = test_context_socket (ZMQ_DEALER);

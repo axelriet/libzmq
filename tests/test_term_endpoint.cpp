@@ -89,12 +89,12 @@ void test_unbind_via_last_endpoint ()
 #if defined ZMQ_HAVE_VMCI
     void *req = test_context_socket (ZMQ_REQ);
     int rc = zmq_bind (req, ep_wc_vmci);
-    if (rc < 0 && errno == EAFNOSUPPORT)
+    if (rc < 0 && zmq_errno () == EAFNOSUPPORT)
         TEST_IGNORE_MESSAGE ("VMCI not supported");
     TEST_ASSERT_SUCCESS_ERRNO (rc);
 #endif
 
-    // Unbind sockets binded by wild-card address
+    // Unbind sockets bound by wild-card address
     TEST_ASSERT_SUCCESS_ERRNO (zmq_unbind (push, my_endpoint));
 
     size_t buf_size = 0;
@@ -130,12 +130,12 @@ void test_wildcard_unbind_fails ()
 #if defined ZMQ_HAVE_VMCI
     void *req = test_context_socket (ZMQ_REQ);
     int rc = zmq_bind (req, ep_wc_vmci);
-    if (rc < 0 && errno == EAFNOSUPPORT)
+    if (rc < 0 && zmq_errno () == EAFNOSUPPORT)
         TEST_IGNORE_MESSAGE ("VMCI not supported");
     TEST_ASSERT_SUCCESS_ERRNO (rc);
 #endif
 
-    // Sockets binded by wild-card address can't be unbinded by wild-card address
+    // Sockets binded by wild-card address can't be unbound by wild-card address
     TEST_ASSERT_FAILURE_ERRNO (ENOENT, zmq_unbind (push, ep_wc_tcp));
 #if !defined ZMQ_HAVE_WINDOWS && !defined ZMQ_HAVE_OPENVMS
     TEST_ASSERT_FAILURE_ERRNO (ENOENT, zmq_unbind (pull, ep_wc_ipc));
