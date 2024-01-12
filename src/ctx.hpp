@@ -27,7 +27,7 @@ class pipe_t;
 
 //  Information associated with inproc endpoint. Note that endpoint options
 //  are registered as well so that the peer can access them without a need
-//  for synchronisation, handshaking or similar.
+//  for synchronization, handshaking or similar.
 struct endpoint_t
 {
     socket_base_t *socket{};
@@ -178,8 +178,8 @@ class ctx_t ZMQ_FINAL : public thread_ctx_t
     //  If true, zmq_ctx_term was already called.
     bool _terminating;
 
-    //  Synchronisation of accesses to global slot-related data:
-    //  sockets, empty_slots, terminating. It also synchronises
+    //  Synchronization of accesses to global slot-related data:
+    //  sockets, empty_slots, terminating. It also synchronizes
     //  access to zombie sockets as such (as opposed to slots) and provides
     //  a memory barrier to ensure that all CPU cores see the same data.
     mutex_t _slot_sync;
@@ -206,7 +206,7 @@ class ctx_t ZMQ_FINAL : public thread_ctx_t
       pending_connections_t;
     pending_connections_t _pending_connections;
 
-    //  Synchronisation of access to the list of inproc endpoints.
+    //  Synchronization of access to the list of inproc endpoints.
     mutex_t _endpoints_sync;
 
     //  Maximum socket ID.

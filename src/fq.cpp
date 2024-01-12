@@ -85,7 +85,7 @@ int zmq::fq_t::recvpipe (msg_t *msg_, pipe_t **pipe_)
             _current = 0;
     }
 
-    //  No message is available. Initialise the output parameter
+    //  No message is available. Initialize the output parameter
     //  to be a 0-byte message.
     rc = msg_->init ();
     errno_assert (rc == 0);

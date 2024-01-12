@@ -100,7 +100,7 @@ int zmq::ipc_listener_t::set_local_address (const char *addr_)
     }
     _filename.clear ();
 
-    //  Initialise the address structure.
+    //  Initialize the address structure.
     ipc_address_t address;
     int rc = address.resolve (addr.c_str ());
     if (rc != 0) {

@@ -82,7 +82,7 @@ int zmq::channel_t::xrecv (msg_t *msg_)
     errno_assert (rc == 0);
 
     if (!_pipe) {
-        //  Initialise the output parameter to be a 0-byte message.
+        //  Initialize the output parameter to be a 0-byte message.
         rc = msg_->init ();
         errno_assert (rc == 0);
 
@@ -104,7 +104,7 @@ int zmq::channel_t::xrecv (msg_t *msg_)
     }
 
     if (!read) {
-        //  Initialise the output parameter to be a 0-byte message.
+        //  Initialize the output parameter to be a 0-byte message.
         rc = msg_->init ();
         errno_assert (rc == 0);
 

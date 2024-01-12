@@ -150,7 +150,7 @@ inline void *atomic_cas (void *volatile *ptr_,
 template <typename T> class atomic_ptr_t
 {
   public:
-    //  Initialise atomic pointer
+    //  Initialize atomic pointer
     atomic_ptr_t () ZMQ_NOEXCEPT { _ptr = NULL; }
 
     //  Set value of atomic pointer in a non-threadsafe way

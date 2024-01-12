@@ -75,7 +75,7 @@ data.
 
 The following functions are provided to work with messages:
 
-Initialise a message::
+Initialize a message::
  * xref:zmq_msg_init.adoc[zmq_msg_init]
  * xref:zmq_msg_init_size.adoc[zmq_msg_init_size]
  * xref:zmq_msg_init_buffer.adoc[zmq_msg_init_buffer]

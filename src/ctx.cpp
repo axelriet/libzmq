@@ -83,7 +83,7 @@ zmq::ctx_t::ctx_t () :
     _vmci_family = -1;
 #endif
 
-    //  Initialise crypto library, if needed.
+    //  Initialize crypto library, if needed.
     zmq::random_open ();
 
 #ifdef ZMQ_USE_NSS
@@ -419,7 +419,7 @@ int zmq::ctx_t::get (int option_)
 
 bool zmq::ctx_t::start ()
 {
-    //  Initialise the array of mailboxes. Additional two slots are for
+    //  Initialize the array of mailboxes. Additional two slots are for
     //  zmq_ctx_term thread and reaper thread.
     _opt_sync.lock ();
     const int term_and_reaper_threads_count = 2;
@@ -438,7 +438,7 @@ bool zmq::ctx_t::start ()
     }
     _slots.resize (term_and_reaper_threads_count);
 
-    //  Initialise the infrastructure for zmq_ctx_term thread.
+    //  Initialize the infrastructure for zmq_ctx_term thread.
     _slots[term_tid] = &_term_mailbox;
 
     //  Create the reaper thread.

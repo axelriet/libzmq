@@ -1,118 +1,44 @@
 /* SPDX-License-Identifier: MPL-2.0 */
 
-#ifndef __ZMQ_SCTP_RECEIVER_HPP_INCLUDED__
-#define __ZMQ_SCTP_RECEIVER_HPP_INCLUDED__
+#ifndef __ZMQ_SCTP_LISTENER_HPP_INCLUDED__
+#define __ZMQ_SCTP_LISTENER_HPP_INCLUDED__
 
-#if defined ZMQ_HAVE_SCTP
-
-#include <map>
-#include <algorithm>
-
-#include "io_object.hpp"
-#include "i_engine.hpp"
-#include "options.hpp"
-#include "v1_decoder.hpp"
-#include "SCTP.hpp"
+#include "fd.hpp"
+#include "sctp_address.hpp"
+#include "stream_listener_base.hpp"
 
 namespace zmq
 {
-class io_thread_t;
-class session_base_t;
-
-class sctp_listener_t ZMQ_FINAL : public io_object_t, public i_engine
+class sctp_listener_t ZMQ_FINAL : public stream_listener_base_t
 {
   public:
-    sctp_listener_t (zmq::io_thread_t *parent_, const options_t &options_);
-    ~sctp_listener_t ();
+    sctp_listener_t (zmq::io_thread_t *io_thread_,
+                    zmq::socket_base_t *socket_,
+                    const options_t &options_);
 
-    int init (bool udp_encapsulation_, const char *network_);
+    //  Set address to listen on.
+    int set_local_address (const char *addr_);
 
-    //  i_engine interface implementation.
-    bool has_handshake_stage () { return false; };
-    void plug (zmq::io_thread_t *io_thread_, zmq::session_base_t *session_);
-    void terminate ();
-    bool restart_input ();
-    void restart_output ();
-    void zap_msg_available () {}
-    const endpoint_uri_pair_t &get_endpoint () const;
-
-    //  i_poll_events interface implementation.
-    void in_event ();
-    void timer_event (int token);
+  protected:
+    std::string get_socket_name (fd_t fd_, socket_end_t socket_end_) const;
 
   private:
-    //  Unplug the engine from the session.
-    void unplug ();
+    //  Handlers for I/O events.
+    void in_event ();
 
-    //  Decode received data (inpos, insize) and forward decoded
-    //  messages to the session.
-    int process_input (v1_decoder_t *decoder);
+    //  Accept the new connection. Returns the file descriptor of the
+    //  newly created connection. The function may return retired_fd
+    //  if the connection was dropped while waiting in the listen backlog
+    //  or was denied because of accept filters.
+    fd_t accept ();
 
-    //  SCTP is not able to move subscriptions upstream. Thus, drop all
-    //  the pending subscriptions.
-    void drop_subscriptions ();
+    int create_socket (const char *addr_);
 
-    //  RX timeout timer ID.
-    enum
-    {
-        rx_timer_id = 0xa1
-    };
-
-    const endpoint_uri_pair_t _empty_endpoint;
-
-    //  RX timer is running.
-    bool has_rx_timer;
-
-    //  If joined is true we are already getting messages from the peer.
-    //  It it's false, we are getting data but still we haven't seen
-    //  beginning of a message.
-    struct peer_info_t
-    {
-        bool joined;
-        v1_decoder_t *decoder;
-    };
-
-//    struct tsi_comp
-//    {
-//        bool operator() (const sctp_tsi_t &ltsi, const sctp_tsi_t &rtsi) const
-//        {
-//            uint32_t ll[2], rl[2];
-//            memcpy (ll, &ltsi, sizeof (ll));
-//            memcpy (rl, &rtsi, sizeof (rl));
-//            return (ll[0] < rl[0]) || (ll[0] == rl[0] && ll[1] < rl[1]);
-//        }
-//    };
-
-//    typedef std::map<sctp_tsi_t, peer_info_t, tsi_comp> peers_t;
-//    peers_t peers;
-
-    //  SCTP socket.
-//    sctp_t SCTP;
-
-    //  Socket options.
-    options_t options;
-
-    //  Associated session.
-    zmq::session_base_t *session;
-
-//    const sctp_tsi_t *active_tsi;
-
-    //  Number of bytes not consumed by the decoder due to pipe overflow.
-    size_t insize;
-
-    //  Pointer to data still waiting to be processed by the decoder.
-    const unsigned char *inpos;
-
-    //  Poll handle associated with SCTP socket.
-    handle_t socket_handle;
-
-    //  Poll handle associated with engine SCTP waiting pipe.
-    handle_t pipe_handle;
+    //  Address to listen on.
+    sctp_address_t _address;
 
     ZMQ_NON_COPYABLE_NOR_MOVABLE (sctp_listener_t)
 };
 }
-
-#endif
 
 #endif

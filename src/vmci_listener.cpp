@@ -82,7 +82,7 @@ int zmq::vmci_listener_t::set_local_address (const char *addr_)
     //  Create addr on stack for auto-cleanup
     std::string addr (addr_);
 
-    //  Initialise the address structure.
+    //  Initialize the address structure.
     vmci_address_t address (this->get_ctx ());
     int rc = address.resolve (addr.c_str ());
     if (rc != 0)

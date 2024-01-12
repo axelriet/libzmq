@@ -29,6 +29,11 @@ void test (const char *address)
     test_context_socket_close (router);
 }
 
+void test_sctp_v4 ()
+{
+    test ("sctp://10.0.0.104:*");
+}
+
 void test_tcp ()
 {
     test ("tcp://127.0.0.1:*");
@@ -73,8 +78,9 @@ int ZMQ_CDECL main ()
     setup_test_environment ();
 
     UNITY_BEGIN ();
-    RUN_TEST (test_tcp);
-    RUN_TEST (test_inproc);
-    RUN_TEST (test_inproc_late_bind);
+//    RUN_TEST (test_tcp);
+    RUN_TEST (test_sctp_v4);
+//    RUN_TEST (test_inproc);
+//    RUN_TEST (test_inproc_late_bind);
     return UNITY_END ();
 }

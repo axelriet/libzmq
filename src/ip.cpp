@@ -25,8 +25,13 @@
 #include <vector>
 #else
 #include "tcp.hpp"
+
 #ifdef ZMQ_HAVE_IPC
 #include "ipc_address.hpp"
+#endif
+
+#ifdef ZMQ_HAVE_SCTP
+#include "sctp_address.hpp"
 #endif
 
 #include <direct.h>
@@ -72,32 +77,49 @@ static const char *tmp_env_vars[] = {
 zmq::fd_t zmq::open_socket (int domain_, int type_, int protocol_)
 {
     int rc;
+    fd_t s;
 
-    //  Setting this option result in sane behaviour when exec() functions
-    //  are used. Old sockets are closed and don't block TCP ports etc.
+#ifdef ZMQ_HAVE_SCTP
+    if (protocol_ == IPPROTO_SCTP) {
+        s = (fd_t) usrsctp_socket (domain_, type_, protocol_, NULL, NULL, 0,
+                                   NULL);
+        if (s == NULL) {
+            return retired_fd;
+        }
+    } else {
+#endif
+
+        //  Setting this option result in sane behaviour when exec() functions
+        //  are used. Old sockets are closed and don't block TCP ports etc.
 #if defined ZMQ_HAVE_SOCK_CLOEXEC
-    type_ |= SOCK_CLOEXEC;
+        type_ |= SOCK_CLOEXEC;
 #endif
 
 #if defined ZMQ_HAVE_WINDOWS && defined WSA_FLAG_NO_HANDLE_INHERIT
-    // if supported, create socket with WSA_FLAG_NO_HANDLE_INHERIT, such that
-    // the race condition in making it non-inheritable later is avoided
-    const fd_t s = WSASocket (domain_, type_, protocol_, NULL, 0,
-                              WSA_FLAG_OVERLAPPED | WSA_FLAG_NO_HANDLE_INHERIT);
+        // if supported, create socket with WSA_FLAG_NO_HANDLE_INHERIT, such that
+        // the race condition in making it non-inheritable later is avoided
+        s = WSASocket (domain_, type_, protocol_, NULL, 0,
+                       WSA_FLAG_OVERLAPPED | WSA_FLAG_NO_HANDLE_INHERIT);
 #else
-    const fd_t s = socket (domain_, type_, protocol_);
+        s = socket (domain_, type_, protocol_);
 #endif
-    if (s == retired_fd) {
+        if (s == retired_fd) {
 #ifdef ZMQ_HAVE_WINDOWS
-        errno = wsa_error_to_errno (WSAGetLastError ());
+            errno = wsa_error_to_errno (WSAGetLastError ());
 #endif
-        return retired_fd;
-    }
+            return retired_fd;
+        }
 
-    make_socket_noninheritable (s);
+        make_socket_noninheritable (s);
+
+#ifdef ZMQ_HAVE_SCTP
+    }
+#endif
+
 
     //  Socket is not yet connected so EINVAL is not a valid networking error
     rc = zmq::set_nosigpipe (s);
+
     errno_assert (rc == 0);
 
     return s;
@@ -287,7 +309,7 @@ bool zmq::initialize_network ()
 #endif
 
 #ifdef ZMQ_HAVE_WINDOWS
-    //  Initialise Windows sockets. Note that WSAStartup can be called multiple
+    //  Initialize Windows sockets. Note that WSAStartup can be called multiple
     //  times given that WSACleanup will be called for each WSAStartup.
 
     const WORD version_requested = MAKEWORD (2, 2);
@@ -298,11 +320,25 @@ bool zmq::initialize_network ()
                 && HIBYTE (wsa_data.wVersion) == 2);
 #endif
 
+#ifdef ZMQ_HAVE_SCTP
+    usrsctp_init (0, NULL, NULL);
+#endif
+
     return true;
 }
 
 void zmq::shutdown_network ()
 {
+#ifdef ZMQ_HAVE_SCTP
+    while (usrsctp_finish () != 0) {
+#ifdef ZMQ_HAVE_WINDOWS
+        Sleep (1);
+#else
+        usleep (static_cast<useconds_t> (1000));
+#endif
+    }
+#endif
+
 #ifdef ZMQ_HAVE_WINDOWS
     //  On Windows, uninitialise socket layer.
     const int rc = WSACleanup ();
@@ -594,7 +630,7 @@ int zmq::make_fdpair (fd_t *r_, fd_t *w_)
 
     create_ipc_wildcard_address (dirname, filename);
 
-    //  Initialise the address structure.
+    //  Initialize the address structure.
     rc = address.resolve (filename.c_str ());
     if (rc != 0) {
         goto error_closelistener;

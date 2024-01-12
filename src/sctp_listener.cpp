@@ -1,290 +1,204 @@
 /* SPDX-License-Identifier: MPL-2.0 */
 
 #include "precompiled.hpp"
-#include "macros.hpp"
-
-#if defined ZMQ_HAVE_SCTP
-
 #include <new>
 
+#include <string>
+#include <stdio.h>
+
+#include "sctp_address.hpp"
 #include "sctp_listener.hpp"
-#include "session_base.hpp"
-#include "v1_decoder.hpp"
-#include "stdint.hpp"
-#include "wire.hpp"
+#include "io_thread.hpp"
+#include "config.hpp"
 #include "err.hpp"
+#include "ip.hpp"
+#include "sctp.hpp"
+#include "socket_base.hpp"
+#include "address.hpp"
 
-zmq::sctp_listener_t::sctp_listener_t (class io_thread_t *parent_,
+#ifndef ZMQ_HAVE_WINDOWS
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/tcp.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <fcntl.h>
+#ifdef ZMQ_HAVE_VXWORKS
+#include <sockLib.h>
+#endif
+#endif
+
+#ifdef ZMQ_HAVE_OPENVMS
+#include <ioctl.h>
+#endif
+
+zmq::sctp_listener_t::sctp_listener_t (io_thread_t *io_thread_,
+                                     socket_base_t *socket_,
                                      const options_t &options_) :
-    io_object_t (parent_),
-    has_rx_timer (false),
-//    SCTP (true, options_),
-    options (options_),
-    session (NULL),
-//    active_tsi (NULL),
-    insize (0)
+    stream_listener_base_t (io_thread_, socket_, options_)
 {
-}
-
-zmq::sctp_listener_t::~sctp_listener_t ()
-{
-    //  Destructor should not be called before unplug.
-//    zmq_assert (peers.empty ());
-}
-
-int zmq::sctp_listener_t::init (bool /*udp_encapsulation_*/, const char */*network_*/)
-{
-//    return SCTP.init (udp_encapsulation_, network_);
-    return 0;
-}
-
-void zmq::sctp_listener_t::plug (io_thread_t *io_thread_,
-                                session_base_t *session_)
-{
-    LIBZMQ_UNUSED (io_thread_);
-    //  Retrieve SCTP fds and start polling.
-    fd_t socket_fd = retired_fd;
-    fd_t waiting_pipe_fd = retired_fd;
-//    SCTP.get_receiver_fds (&socket_fd, &waiting_pipe_fd);
-    socket_handle = add_fd (socket_fd);
-    pipe_handle = add_fd (waiting_pipe_fd);
-    set_pollin (pipe_handle);
-    set_pollin (socket_handle);
-
-    session = session_;
-
-    //  If there are any subscriptions already queued in the session, drop them.
-    drop_subscriptions ();
-}
-
-void zmq::sctp_listener_t::unplug ()
-{
-    //  Delete decoders.
-//    for (peers_t::iterator it = peers.begin (), end = peers.end (); it != end;
-  //       ++it) {
-//        if (it->second.decoder != NULL) {
-//            LIBZMQ_DELETE (it->second.decoder);
-//        }
-//    }
-//    peers.clear ();
-//    active_tsi = NULL;
-
-//    if (has_rx_timer) {
-//        cancel_timer (rx_timer_id);
-//        has_rx_timer = false;
-//    }
-
-//    rm_fd (socket_handle);
-//    rm_fd (pipe_handle);
-
-//    session = NULL;
-}
-
-void zmq::sctp_listener_t::terminate ()
-{
-    unplug ();
-    delete this;
-}
-
-void zmq::sctp_listener_t::restart_output ()
-{
-    drop_subscriptions ();
-}
-
-bool zmq::sctp_listener_t::restart_input ()
-{
-    zmq_assert (session != NULL);
-//    zmq_assert (active_tsi != NULL);
-
-//    const peers_t::iterator it = peers.find (*active_tsi);
-//    zmq_assert (it != peers.end ());
-//    zmq_assert (it->second.joined);
-
-    //  Push the pending message into the session.
-  //  int rc = session->push_msg (it->second.decoder->msg ());
-//    errno_assert (rc == 0);
-
-//    if (insize > 0) {
-//        rc = process_input (it->second.decoder);
-//        if (rc == -1) {
-            //  HWM reached; we will try later.
-//            if (errno == EAGAIN) {
-//                session->flush ();
-//                return true;
-//            }
-            //  Data error. Delete message decoder, mark the
-            //  peer as not joined and drop remaining data.
-//            it->second.joined = false;
-//            LIBZMQ_DELETE (it->second.decoder);
-//            insize = 0;
-//        }
-//    }
-
-    //  Resume polling.
-//    set_pollin (pipe_handle);
-//    set_pollin (socket_handle);
-
-//    active_tsi = NULL;
-//    in_event ();
-
-    return true;
-}
-
-const zmq::endpoint_uri_pair_t &zmq::sctp_listener_t::get_endpoint () const
-{
-    return _empty_endpoint;
 }
 
 void zmq::sctp_listener_t::in_event ()
 {
-    // If active_tsi is not null, there is a pending restart_input.
-    // Keep the internal state as is so that restart_input would process the right data
-//    if (active_tsi) {
-//        return;
-//    }
+    const fd_t fd = accept ();
 
-    // Read data from the underlying SCTP.
-//    const sctp_tsi_t *tsi = NULL;
+    //  If connection was reset by the peer in the meantime, just ignore it.
+    //  TODO: Handle specific errors like ENFILE/EMFILE etc.
+    if (fd == retired_fd) {
+        _socket->event_accept_failed (
+          make_unconnected_bind_endpoint_pair (_endpoint), zmq_errno ());
+        return;
+    }
 
-//    if (has_rx_timer) {
-//        cancel_timer (rx_timer_id);
-//        has_rx_timer = false;
-//    }
+#if 0
+    int rc = tune_tcp_socket (fd);
+    rc = rc
+         | tune_tcp_keepalives (
+           fd, options.tcp_keepalive, options.tcp_keepalive_cnt,
+           options.tcp_keepalive_idle, options.tcp_keepalive_intvl);
+    rc = rc | tune_tcp_maxrt (fd, options.tcp_maxrt);
+    if (rc != 0) {
+        _socket->event_accept_failed (
+          make_unconnected_bind_endpoint_pair (_endpoint), zmq_errno ());
+        return;
+    }
+#endif
 
-    //  TODO: This loop can effectively block other engines in the same I/O
-    //  thread in the case of high load.
-//    while (true) {
-        //  Get new batch of data.
-        //  Note the workaround made not to break strict-aliasing rules.
-//        insize = 0;
-//        void *tmp = NULL;
-//        ssize_t received = SCTP.receive (&tmp, &tsi);
-
-        //  No data to process. This may happen if the packet received is
-        //  neither ODATA nor ODATA.
-//        if (received == 0) {
-//            if (errno == ENOMEM || errno == EBUSY) {
-//                const long timeout = SCTP.get_rx_timeout ();
-//                if (timeout >= 0) {
-//                    add_timer (timeout, rx_timer_id);
-//                    has_rx_timer = true;
-//                }
-//            }
-//            break;
-//        }
-
-        //  Find the peer based on its TSI.
-//        peers_t::iterator it = peers.find (*tsi);
-
-        //  Data loss. Delete decoder and mark the peer as disjoint.
-//        if (received == -1) {
-//            if (it != peers.end ()) {
-//                it->second.joined = false;
-//                if (it->second.decoder != NULL) {
-//                    LIBZMQ_DELETE (it->second.decoder);
-//                }
-//            }
-//            break;
-//        }
-
-        //  New peer. Add it to the list of know but unjoint peers.
-//        if (it == peers.end ()) {
-//            peer_info_t peer_info = {false, NULL};
-//            it = peers.ZMQ_MAP_INSERT_OR_EMPLACE (*tsi, peer_info).first;
-//        }
-
-//        insize = static_cast<size_t> (received);
-//        inpos = (unsigned char *) tmp;
-
-        //  Read the offset of the fist message in the current packet.
-//        zmq_assert (insize >= sizeof (uint16_t));
-//        uint16_t offset = get_uint16 (inpos);
-//        inpos += sizeof (uint16_t);
-//        insize -= sizeof (uint16_t);
-
-        //  Join the stream if needed.
-//        if (!it->second.joined) {
-            //  There is no beginning of the message in current packet.
-            //  Ignore the data.
-//            if (offset == 0xffff)
-//                continue;
-
-//            zmq_assert (offset <= insize);
-//            zmq_assert (it->second.decoder == NULL);
-
-            //  We have to move data to the beginning of the first message.
-//            inpos += offset;
-//            insize -= offset;
-
-            //  Mark the stream as joined.
-//            it->second.joined = true;
-
-            //  Create and connect decoder for the peer.
-//            it->second.decoder =
-//              new (std::nothrow) v1_decoder_t (0, options.maxmsgsize);
-//            alloc_assert (it->second.decoder);
-//        }
-
-//        int rc = process_input (it->second.decoder);
-//        if (rc == -1) {
-//            if (errno == EAGAIN) {
-  //              active_tsi = tsi;
-
-                //  Stop polling.
-//                reset_pollin (pipe_handle);
-//                reset_pollin (socket_handle);
-
-//                break;
-//            }
-
-//            it->second.joined = false;
-//            LIBZMQ_DELETE (it->second.decoder);
-//            insize = 0;
-//        }
-//    }
-
-    //  Flush any messages decoder may have produced.
-    //session->flush ();
+    //  Create the engine object for this connection.
+    create_engine (fd);
 }
 
-int zmq::sctp_listener_t::process_input (v1_decoder_t *decoder)
+std::string
+zmq::sctp_listener_t::get_socket_name (zmq::fd_t fd_,
+                                      socket_end_t socket_end_) const
 {
-    zmq_assert (session != NULL);
+    return zmq::get_socket_name<tcp_address_t> (fd_, socket_end_);
+}
 
-    while (insize > 0) {
-        size_t n = 0;
-        int rc = decoder->decode (inpos, insize, n);
-        if (rc == -1)
-            return -1;
-        inpos += n;
-        insize -= n;
-        if (rc == 0)
-            break;
-        rc = session->push_msg (decoder->msg ());
-        if (rc == -1) {
-            errno_assert (errno == EAGAIN);
-            return -1;
-        }
+int zmq::sctp_listener_t::create_socket (const char *addr_)
+{
+    _s = sctp_open_socket (addr_, options, true, true, &_address);
+
+    if (_s == retired_fd) {
+        return -1;
     }
+
+    //  Allow reusing of the address.
+    int flag = 1;
+    int rc;
+
+#if 0
+    rc =
+      usrsctp_setsockopt (_s, SOL_SOCKET, SO_EXCLUSIVEADDRUSE,
+                     reinterpret_cast<const char *> (&flag), sizeof (int));
+    wsa_assert (rc != SOCKET_ERROR);
+#endif
+
+    //  Bind the socket to the network interface and port.
+    rc =
+      usrsctp_bind ((struct socket *) _s, (struct sockaddr *) _address.addr (),
+                    _address.addrlen ());
+
+    if (rc != 0) {
+        goto error;
+    }
+
+    //  Listen for incoming connections.
+    rc = usrsctp_listen ((struct socket *) _s, options.backlog);
+
+    if (rc != 0) {
+        goto error;
+    }
+
+    return 0;
+
+error:
+    const int err = errno;
+    close ();
+    errno = err;
+    return -1;
+}
+
+int zmq::sctp_listener_t::set_local_address (const char *addr_)
+{
+    if (options.use_fd != -1) {
+        //  in this case, the addr_ passed is not used and ignored, since the
+        //  socket was already created by the application
+        _s = options.use_fd;
+    } else {
+        if (create_socket (addr_) == -1)
+            return -1;
+    }
+
+    _endpoint = get_socket_name (_s, socket_end_local);
+
+    _socket->event_listening (make_unconnected_bind_endpoint_pair (_endpoint),
+                              _s);
     return 0;
 }
 
-
-void zmq::sctp_listener_t::timer_event (int token)
+zmq::fd_t zmq::sctp_listener_t::accept ()
 {
-    zmq_assert (token == rx_timer_id);
+    //  The situation where connection cannot be accepted due to insufficient
+    //  resources is considered valid and treated by ignoring the connection.
+    //  Accept one connection and deal with different failure modes.
+    zmq_assert (_s != retired_fd);
 
-    //  Timer cancels on return by poller_base.
-    has_rx_timer = false;
-    in_event ();
-}
+    sctp_sockstore ss;
+    memset (&ss, 0, sizeof (ss));
+    socklen_t ss_len = sizeof (ss);
 
-void zmq::sctp_listener_t::drop_subscriptions ()
-{
-    msg_t msg;
-    msg.init ();
-    while (session->pull_msg (&msg) == 0)
-        msg.close ();
-}
+    const fd_t sock = (fd_t) usrsctp_accept (
+      (struct socket *) _s, reinterpret_cast<struct sockaddr *> (&ss), &ss_len);
 
+    if (sock == retired_fd) {
+
+        int err_no = errno;
+
+        errno_assert (err_no == EAGAIN || err_no == EWOULDBLOCK || err_no == EINTR
+                      || err_no == ECONNABORTED || err_no == EPROTO
+                      || err_no == ENOBUFS || err_no == ENOMEM || err_no == EMFILE
+                      || err_no == ENFILE);
+
+        return retired_fd;
+    }
+
+    make_socket_noninheritable (sock);
+
+    if (!options.tcp_accept_filters.empty ()) {
+        bool matched = false;
+        for (options_t::tcp_accept_filters_t::size_type
+               i = 0,
+               size = options.tcp_accept_filters.size ();
+             i != size; ++i) {
+            if (options.tcp_accept_filters[i].match_address (
+                  reinterpret_cast<struct sockaddr *> (&ss), ss_len)) {
+                matched = true;
+                break;
+            }
+        }
+        if (!matched) {
+            usrsctp_close ((struct socket*) sock);
+            return retired_fd;
+        }
+    }
+
+    if (zmq::set_nosigpipe (sock)) {
+        usrsctp_close ((struct socket *) sock);
+        return retired_fd;
+    }
+
+#if 0
+    // Set the IP Type-Of-Service priority for this client socket
+    if (options.tos != 0)
+        set_ip_type_of_service (sock, options.tos);
+
+    // Set the protocol-defined priority for this client socket
+    if (options.priority != 0)
+        set_socket_priority (sock, options.priority);
 #endif
+
+    return sock;
+}

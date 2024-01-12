@@ -72,7 +72,7 @@ int zmq::hvsocket_listener_t::set_local_address (const char *addr_)
     std::string addr (addr_);
 
     //
-    //  Initialise the address structure.
+    //  Initialize the address structure.
     //
 
     hvsocket_address_t address (this->get_ctx ());

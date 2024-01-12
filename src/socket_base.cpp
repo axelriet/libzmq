@@ -808,9 +808,9 @@ int zmq::socket_base_t::bind (const char *endpoint_uri_)
 #if defined ZMQ_HAVE_SCTP
     if (protocol == protocol_name::sctp) {
         sctp_listener_t *listener =
-          new (std::nothrow) sctp_listener_t (io_thread, /*this,*/ options);
+          new (std::nothrow) sctp_listener_t (io_thread, this, options);
         alloc_assert (listener);
-//        rc = listener->set_local_address (address.c_str ());
+        rc = listener->set_local_address (address.c_str ());
         if (rc != 0) {
             LIBZMQ_DELETE (listener);
             event_bind_failed (make_unconnected_bind_endpoint_pair (address),
@@ -818,10 +818,10 @@ int zmq::socket_base_t::bind (const char *endpoint_uri_)
             return -1;
         }
 
-//        listener->get_local_address (_last_endpoint);
+        listener->get_local_address (_last_endpoint);
 
-//        add_endpoint (make_unconnected_bind_endpoint_pair (_last_endpoint),
-//                      static_cast<own_t *> (listener), NULL);
+        add_endpoint (make_unconnected_bind_endpoint_pair (_last_endpoint),
+                      static_cast<own_t *> (listener), NULL);
         options.connected = true;
         return 0;
     }
@@ -980,7 +980,7 @@ int zmq::socket_base_t::connect_internal (const char *endpoint_uri_)
     alloc_assert (paddr);
 
     //  Resolve address (if needed by the protocol)
-    if (protocol == protocol_name::tcp) {
+    if (protocol == protocol_name::tcp || protocol == protocol_name::sctp) {
         //  Do some basic sanity checks on tcp:// address syntax
         //  - hostname starts with digit or letter, with embedded '-' or '.'
         //  - IPv6 address may contain hex chars and colons.
@@ -1020,7 +1020,7 @@ int zmq::socket_base_t::connect_internal (const char *endpoint_uri_)
             return -1;
         }
         //  Defer resolution until a socket is opened
-        paddr->resolved.tcp_addr = NULL;
+        paddr->resolved.dummy = NULL; // both tcp_addr and sctp_addr
     }
 #ifdef ZMQ_HAVE_WS
 #ifdef ZMQ_HAVE_WSS
@@ -1146,19 +1146,6 @@ int zmq::socket_base_t::connect_internal (const char *endpoint_uri_)
           new (std::nothrow) hvsocket_address_t (this->get_ctx ());
         alloc_assert (paddr->resolved.hvsocket_addr);
         rc = paddr->resolved.hvsocket_addr->resolve (address.c_str ());
-        if (rc != 0) {
-            LIBZMQ_DELETE (paddr);
-            return -1;
-        }
-    }
-#endif
-
-#if defined ZMQ_HAVE_SCTP
-    else if (protocol == protocol_name::sctp) {
-        paddr->resolved.sctp_addr =
-          new (std::nothrow) sctp_address_t (this->get_ctx ());
-        alloc_assert (paddr->resolved.sctp_addr);
-        rc = paddr->resolved.sctp_addr->resolve (address.c_str ());
         if (rc != 0) {
             LIBZMQ_DELETE (paddr);
             return -1;
@@ -1567,7 +1554,7 @@ void zmq::socket_base_t::start_reaping (poller_t *poller_)
     _handle = _poller->add_fd (fd, this);
     _poller->set_pollin (_handle);
 
-    //  Initialise the termination and check whether it can be deallocated
+    //  Initialize the termination and check whether it can be deallocated
     //  immediately.
     terminate ();
     check_destroy ();

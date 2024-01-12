@@ -1157,7 +1157,7 @@ if(WITH_TBB_SCALABLE_ALLOCATOR)
   set(ZMQ_HAVE_TBB_SCALABLE_ALLOCATOR 1)
 find_path(TBB_INCLUDE_DIRS ./oneapi/tbb.h PATHS "C:/Program Files (x86)/Intel/oneAPI/tbb/latest/include" NO_DEFAULT_PATH)
 include_directories(${TBB_INCLUDE_DIRS})
-set(TBB_MALLOC_LIBS debug ${TBB_INCLUDE_DIRS}/../lib/vc_mt/tbb12_debug.lib debug ${TBB_INCLUDE_DIRS}/../lib/vc_mt/tbbmalloc_debug.lib optimized ${TBB_INCLUDE_DIRS}/../lib/vc_mt/tbb12.lib optimized ${TBB_INCLUDE_DIRS}/../lib/vc_mt/tbbmalloc.lib)
+set(TBB_MALLOC_LIBS debug ${TBB_INCLUDE_DIRS}/../lib/tbb12_debug.lib debug ${TBB_INCLUDE_DIRS}/../lib/tbbmalloc_debug.lib optimized ${TBB_INCLUDE_DIRS}/../lib/tbb12.lib optimized ${TBB_INCLUDE_DIRS}/../lib/tbbmalloc.lib)
 set(TBB_MALLOC_FOUND 1)
 endif()
 
