@@ -745,6 +745,7 @@ int zmq::msg_t::set_group (_In_reads_ (length_) const char *group_,
         strncpy (_u.base.group.lgroup.content->group, group_, length_);
         _u.base.group.lgroup.content->group[length_] = '\0';
     } else {
+        _u.base.group.type = group_type_short;
         strncpy (_u.base.group.sgroup.group, group_, length_);
         _u.base.group.sgroup.group[length_] = '\0';
     }

@@ -311,8 +311,8 @@ class msg_t
   public:
     struct long_group_t
     {
-        char group[ZMQ_GROUP_MAX_LENGTH + 1];
         atomic_counter_t refcnt;
+        char group[ZMQ_GROUP_MAX_LENGTH + 1];
     };
 
 #if defined(ZMQ_40_BYTES_VSM)
@@ -323,17 +323,17 @@ class msg_t
     // content pointer aligned to the end. When embedded
     // into the msg_t structure, the content pointer is
     // properly 4- or 8-aligned depending on the arch.
-    // 
+    //
     // With the short group name reduced from 15 to 8 bytes,
     // the vsm threshold is increased from 33 to 40 bytes
     // without breaking binary compatibility with existing
     // compiled clients and bindings.
-    // 
+    //
     // To take maximum advantage of the vsm increase, group
     // names should be kept short, ideally 7 characters or
     // less as to avoid an external allocation, and the
     // message payload should be 40 bytes or less.
-    // 
+    //
     // 1-packing is necessary.
     //
 
