@@ -109,10 +109,16 @@ void zmq::udp_engine_t::plug (io_thread_t *io_thread_, session_base_t *session_)
 
             if (out->is_multicast ()) {
                 const bool is_ipv6 = (out->family () == AF_INET6);
+#ifndef _WIN32
+                //
+                // On Windows, the multicast loop socket option affects the *receive* path!
+                // https://learn.microsoft.com/en-us/windows/win32/winsock/ip-multicast-2
+                //
+
                 rc = rc
                      | set_udp_multicast_loop (_fd, is_ipv6,
                                                _options.multicast_loop);
-
+#endif
                 if (_options.multicast_hops > 0) {
                     rc = rc
                          | set_udp_multicast_ttl (_fd, is_ipv6,
@@ -139,6 +145,18 @@ void zmq::udp_engine_t::plug (io_thread_t *io_thread_, session_base_t *session_)
         const bool multicast = udp_addr->is_mcast ();
 
         if (multicast) {
+#ifdef _WIN32
+            //
+            // On Windows, the multicast loop socket option affects the *receive* path!
+            // https://learn.microsoft.com/en-us/windows/win32/winsock/ip-multicast-2
+            //
+
+            rc =
+              rc
+              | set_udp_multicast_loop (_fd, (bind_addr->family () == AF_INET6),
+                                        _options.multicast_loop);
+#endif
+
             //  Multicast addresses should be allowed to bind to more than
             //  one port as all ports should receive the message
             rc = rc | set_udp_reuse_port (_fd, true);

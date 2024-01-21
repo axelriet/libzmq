@@ -82,7 +82,7 @@ void test_long_group ()
 
     void *dish = test_context_socket (ZMQ_DISH);
 
-    // Joining to a long group, over 14 chars
+    // Joining to a long group, over 14 chars (or over 7 chars in vsm-40 builds)
     char group[19] = "0123456789ABCDEFGH";
     TEST_ASSERT_SUCCESS_ERRNO (zmq_join (dish, group));
 
@@ -255,8 +255,12 @@ void test_radio_dish_udp (int ipv6_)
 }
 MAKE_TEST_V4V6 (test_radio_dish_udp)
 
-#define MCAST_IPV4 "226.8.5.5"
-#define MCAST_IPV6 "ff02::7a65:726f:6df1:0a01"
+//
+// Use "private experiment" multicast addresses
+//
+
+#define MCAST_IPV4 "224.0.1.20"
+#define MCAST_IPV6 "FF02:0:0:0:0:0:0:114"
 
 static const char *mcast_url (int ipv6_)
 {
@@ -403,7 +407,7 @@ static bool is_multicast_available (int ipv6_)
 
     msleep (SETTLE_TIME);
 
-    rc = recvfrom (bind_sock, buf, sizeof (buf) - 1, ZMQ_DONTWAIT, NULL, 0);
+    rc = recvfrom (bind_sock, buf, sizeof (buf) - 1, 0, NULL, 0);
     if (rc < 0) {
         goto out;
     }
@@ -463,10 +467,6 @@ MAKE_TEST_V4V6 (test_radio_dish_mcast)
 
 static void test_radio_dish_no_loop (int ipv6_)
 {
-#ifdef _WIN32
-    TEST_IGNORE_MESSAGE (
-      "ZMQ_MULTICAST_LOOP=false does not appear to work on Windows (TODO)");
-#endif
     ignore_if_unavailable (ipv6_);
 
     void *radio = test_context_socket (ZMQ_RADIO);
@@ -477,10 +477,21 @@ static void test_radio_dish_no_loop (int ipv6_)
     TEST_ASSERT_SUCCESS_ERRNO (
       zmq_setsockopt (dish, ZMQ_IPV6, &ipv6_, sizeof (int)));
 
-    //  Disable multicast loop for radio
+    //
+    // Disable multicast loop.
+    //
+    // NB: On Windows, the multicast loop socket option affects the *receive* path!
+    // https://learn.microsoft.com/en-us/windows/win32/winsock/ip-multicast-2
+    //
+
     int loop = 0;
+#ifdef _WIN32
+    TEST_ASSERT_SUCCESS_ERRNO (
+      zmq_setsockopt (dish, ZMQ_MULTICAST_LOOP, &loop, sizeof (int)));
+#else
     TEST_ASSERT_SUCCESS_ERRNO (
       zmq_setsockopt (radio, ZMQ_MULTICAST_LOOP, &loop, sizeof (int)));
+#endif
 
     const char *url = mcast_url (ipv6_);
 
