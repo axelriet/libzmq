@@ -658,8 +658,10 @@ if(MSVC)
     zmq_check_cxx_flag_prepend("/wd26400") # Do not assign the result of an allocation or a function call with an
                                            # owner<T> return value to a raw pointer, use owner<T> instead
     zmq_check_cxx_flag_prepend("/wd26485") # Expression '...': No array to pointer decay(bounds.3)
+    zmq_check_cxx_flag_prepend("/wd4505")  # unreferenced function with internal linkage has been remove
   else()
     zmq_check_cxx_flag_prepend("/W3")
+    zmq_check_cxx_flag_prepend("/wd4505")  # unreferenced function with internal linkage has been remove
   endif()
 else()
   zmq_check_cxx_flag_prepend("-Wall")
@@ -781,61 +783,10 @@ find_package(AsciiDoctor)
 cmake_dependent_option(WITH_DOC "Build Reference Guide documentation(requires DocBook)" ON "ASCIIDOC_FOUND;NOT WIN32"
                        OFF) # Do not build docs on Windows due to issues with symlinks
 
-if(MSVC)
-  if(WITH_OPENPGM)
-    # set(OPENPGM_ROOT "" CACHE PATH "Location of OpenPGM")
-    set(OPENPGM_VERSION_MAJOR 5)
-    set(OPENPGM_VERSION_MINOR 2)
-    set(OPENPGM_VERSION_MICRO 122)
-    if(CMAKE_CL_64)
-      find_path(
-        OPENPGM_ROOT include/pgm/pgm.h
-        PATHS
-          "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Miru\\OpenPGM ${OPENPGM_VERSION_MAJOR}.${OPENPGM_VERSION_MINOR}.${OPENPGM_VERSION_MICRO}]"
-        NO_DEFAULT_PATH)
-      message(STATUS "OpenPGM x64 detected - ${OPENPGM_ROOT}")
-    else()
-      find_path(
-        OPENPGM_ROOT include/pgm/pgm.h
-        PATHS
-          "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Miru\\OpenPGM ${OPENPGM_VERSION_MAJOR}.${OPENPGM_VERSION_MINOR}.${OPENPGM_VERSION_MICRO}]"
-          "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Miru\\OpenPGM ${OPENPGM_VERSION_MAJOR}.${OPENPGM_VERSION_MINOR}.${OPENPGM_VERSION_MICRO}]"
-          NO_DEFAULT_PATH)
-      message(STATUS "OpenPGM x86 detected - ${OPENPGM_ROOT}")
-    endif()
+if(WITH_OPENPGM)
+    find_path(OPENPGM_ROOT include/pgm/pgm.h PATHS NO_DEFAULT_PATH)
+    message(STATUS "OpenPGM detected - ${OPENPGM_ROOT}")
     set(OPENPGM_INCLUDE_DIRS ${OPENPGM_ROOT}/include)
-  endif()
-else()
-  if(WITH_OPENPGM)
-    # message(FATAL_ERROR "WITH_OPENPGM not implemented")
-
-    if(NOT OPENPGM_PKGCONFIG_NAME)
-      set(OPENPGM_PKGCONFIG_NAME "openpgm-5.2")
-    endif()
-
-    set(OPENPGM_PKGCONFIG_NAME
-        ${OPENPGM_PKGCONFIG_NAME}
-        CACHE STRING "Name pkg-config shall use to find openpgm libraries and include paths" FORCE)
-
-    pkg_check_modules(OPENPGM ${OPENPGM_PKGCONFIG_NAME})
-
-    if(OPENPGM_FOUND)
-      message(STATUS ${OPENPGM_PKGCONFIG_NAME}" found")
-      set(pkg_config_names_private "${pkg_config_names_private} ${OPENPGM_PKGCONFIG_NAME}")
-    else()
-      message(
-        FATAL_ERROR
-          ${OPENPGM_PKGCONFIG_NAME}"  not found. openpgm is searchd via `pkg-config ${OPENPGM_PKGCONFIG_NAME}`. Consider providing a valid OPENPGM_PKGCONFIG_NAME"
-      )
-    endif()
-
-    # DSO symbol visibility for openpgm
-    if(HAVE_FLAG_VISIBILITY_HIDDEN)
-
-    elseif(HAVE_FLAG_LDSCOPE_HIDDEN)
-
-    endif()
-  endif()
 endif()
 
 # -----------------------------------------------------------------------------
@@ -1485,7 +1436,7 @@ endforeach()
 if(MSVC)
   if(WITH_OPENPGM)
     set(OPENPGM_LIBRARY_DIRS ${OPENPGM_ROOT}/bin/lib)
-    set(OPENPGM_LIBRARIES debug ${OPENPGM_LIBRARY_DIRS}/Debug/libpgmd.lib optimized ${OPENPGM_LIBRARY_DIRS}/Release/libpgm.lib)
+    set(OPENPGM_LIBRARIES debug ${OPENPGM_LIBRARY_DIRS}/Debug/libpgm.lib optimized ${OPENPGM_LIBRARY_DIRS}/Release/libpgm.lib)
   endif()
 endif()
 
