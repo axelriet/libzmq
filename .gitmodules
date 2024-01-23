@@ -7,3 +7,6 @@
 [submodule "external/openpgm"]
 	path = external/openpgm
 	url = https://github.com/axelriet/openpgm.git
+[submodule "external/libsodium"]
+	path = external/libsodium
+	url = https://github.com/axelriet/libsodium.git
