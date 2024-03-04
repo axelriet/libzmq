@@ -265,13 +265,13 @@ endif()
 # Select curve encryption library, defaults to disabled To use libsodium instead, use --with-libsodium(must be
 # installed) To disable curve, use --disable-curve
 
-option(WITH_GSSAPI "Use GSS API" OFF)
-option(WITH_LIBSODIUM "Use libsodium" OFF)
+option(WITH_LIBSODIUM "Use libsodium (required with ENABLE_CURVE)" OFF)
 option(WITH_LIBSODIUM_STATIC "Use static libsodium library" OFF)
 option(ENABLE_LIBSODIUM_RANDOMBYTES_CLOSE "Automatically close libsodium randombytes. Not threadsafe without getrandom()" ON)
 option(ENABLE_CURVE "Enable CURVE security" OFF)
 
 if(ENABLE_CURVE)
+  # libsodium is currently the only CURVE provider
   if(WITH_LIBSODIUM)
     find_package("sodium")
     if(SODIUM_FOUND)
@@ -288,12 +288,17 @@ if(ENABLE_CURVE)
       endif()
     else()
       message(
-        ERROR
-          "libsodium not installed, you may want to install libsodium and run cmake again"
+        FATAL_ERROR
+          "libsodium requested but not found, you may want to install libsodium and run cmake again"
       )
     endif()
+  else() # WITH_LIBSODIUM
+    message(
+      FATAL_ERROR
+      "ENABLE_CURVE set, but not WITH_LIBSODIUM. No CURVE provider found."
+      )
   endif()
-else()
+else() # ENABLE_CURVE
   message(STATUS "CURVE security is disabled")
 endif()
 
@@ -392,7 +397,7 @@ endif(WIN32)
 
 if(NOT MSVC)
   if(POLLER STREQUAL "")
-    check_cxx_symbol_exists(kqueue sys/event.h HAVE_KQUEUE)
+    check_cxx_symbol_exists(kqueue "sys/types.h;sys/event.h;sys/time.h" HAVE_KQUEUE)
     if(HAVE_KQUEUE)
       set(POLLER "kqueue")
     endif()
